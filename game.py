@@ -13,29 +13,25 @@ class game:
         self.create_board_game()
 
     def create_board_game(self):
-        # Layout fixo para o labirinto com '*' para pontos de comida
-        fixed_layout = [
-            ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
-            ['-', ' ', '*', '*', '-', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', ' ', '*', '-'],
-            ['-', '*', '*', '*', '*', '*', '*', '-', '*', '-', '*', '-', '*', '*', '*', '*', '*', '-'],
-            ['-', '*', '*', '*', '-', '-', '*', '-', '*', '-', '*', '*', '-', '-', '*', ' ', '*', '-'],
-            ['-', '*', '*', '*', '-', '*', '*', '*', '*', '*', '-', '-', '*', '*', '*', '*', '*', '-'],
-            ['-', '*', '-', '-', '*', '*', '-', '-', '-', '*', '*', '-', '*', '*', '-', '-', '*', '-'],
-            ['-', '*', '*', '*', '*', '-', '*', '*', '*', '-', '*', '*', '*', '-', '*', '*', '*', '-'],
-            ['-', '-', '*', '-', '-', '*', '*', '*', '*', '*', '*', '-', '-', '*', '-', '*', '-', '-'],
-            ['-', '*', '*', '*', '*', '*', '*', '-', '-', '*', '*', '*', '*', '*', '*', '*', '*', '-'],
-            ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-']
+        # Novo layout do labirinto fornecido
+        maze_layout = [
+            "------------------",
+            "-***--***********-",
+            "-********-*-*****-",
+            "-****---*-**--***-",
+            "-********-*******-",
+            "-**----****----**-",
+            "-********-*******-",
+            "--*--********--*--",
+            "-******--********-",
+            "------------------"
         ]
 
-        # Contar o número de comidas no layout fixo
-        self.food_count = sum(row.count('*') for row in fixed_layout)
+        # Inicializa o tabuleiro com o layout fornecido
+        self.board = [list(row) for row in maze_layout]
 
-        # Definir o tabuleiro com base no layout fixo
-        self.board = fixed_layout
-
-    def get_size(self) -> Tuple[int, int]:
-        # Retornar as dimensões do tabuleiro (número de linhas e colunas)
-        return self.size_board
+        # Contar o número de comidas no layout fornecido
+        self.food_count = sum(row.count('*') for row in self.board)
 
     def display(self) -> None:
         for x in range(self.size_board[0]):
@@ -43,13 +39,18 @@ class game:
                 if (x, y) == self.pacman_position:
                     print("P", end=" ")
                 elif (x, y) == self.ghost1_position:
-                    print("G", end=" ")
+                    print("G1", end=" ")
                 elif (x, y) == self.ghost2_position:
-                    print("F", end=" ")
+                    print("G2", end=" ")
                 else:
                     print(self.board[x][y], end=" ")
             print()
         print(f"                                                Score: {self.score}")
+
+    def get_size(self) -> Tuple[int, int]:
+        # Retornar as dimensões do tabuleiro (número de linhas e colunas)
+        return self.size_board
+
 
     def get_board(self):
         return self.board
@@ -115,7 +116,7 @@ class game:
 
             # Movimentos possíveis (cima, baixo, esquerda, direita)
             possible_moves = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-            valid_moves = [(nx, ny) for (nx, ny) in possible_moves if self.board[nx][ny] not in ['-', 'P', 'G', 'F']]
+            valid_moves = [(nx, ny) for (nx, ny) in possible_moves if self.board[nx][ny] not in ['-', 'P', 'G', 'G2']]
 
             if valid_moves:
                 # Escolher um movimento aleatório válido
@@ -162,7 +163,7 @@ class game:
         return (
             0 <= x < self.size_board[0] and
             0 <= y < self.size_board[1] and
-            self.board[x][y] not in ['-', 'P', 'G', 'F']  # Não pode ser parede, pacman ou outro fantasma
+            self.board[x][y] not in ['-', 'P', 'G', 'G2']  # Não pode ser parede, pacman ou outro fantasma
         )
 
     def is_terminal(self) -> bool:
@@ -242,16 +243,16 @@ class game:
 
         possible_moves = []
         # Verificar se Pac-Man pode se mover para cima
-        if x > 0 and self.board[x - 1][y] not in ['-', 'G', 'F']:
+        if x > 0 and self.board[x - 1][y] not in ['-', 'G', 'G2']:
             possible_moves.append('up')
         # Verificar se Pac-Man pode se mover para baixo
-        if x < board_size[0] - 1 and self.board[x + 1][y] not in ['-', 'G', 'F']:
+        if x < board_size[0] - 1 and self.board[x + 1][y] not in ['-', 'G', 'G2']:
             possible_moves.append('down')
         # Verificar se Pac-Man pode se mover para a esquerda
-        if y > 0 and self.board[x][y - 1] not in ['-', 'G', 'F']:
+        if y > 0 and self.board[x][y - 1] not in ['-', 'G', 'G2']:
             possible_moves.append('left')
         # Verificar se Pac-Man pode se mover para a direita
-        if y < board_size[1] - 1 and self.board[x][y + 1] not in ['-', 'G', 'F']:
+        if y < board_size[1] - 1 and self.board[x][y + 1] not in ['-', 'G', 'G2']:
             possible_moves.append('right')
 
         return possible_moves
@@ -262,3 +263,9 @@ class game:
 # Inicializar o jogo e iniciar a simulação
 game_instance = game()
 game_instance.start_game()
+game_instance = game(
+    size_board=(10, 18),  # Tamanho do novo labirinto
+    pacman_position=(1, 1),  # Ajuste a posição inicial para evitar colisões
+    ghost1_position=(1, 16),  # Ajuste a posição inicial do fantasma 1
+    ghost2_position=(3, 15)   # Ajuste a posição inicial do fantasma 2
+)
