@@ -1,0 +1,52 @@
+from typing import Tuple, Dict
+import random as r
+
+
+class ghosts:
+    def __init__(self):
+        pass
+
+    def move_ghosts(
+        self, pos_ghosts1: Tuple[int, int], pos_ghosts2: Tuple[int, int], pos_pacman: Tuple[int, int], board: list, board_size: Tuple[int, int], random: bool = False
+    ) -> Dict[str, Tuple[int, int]]:
+        # Mover G1 e G2 em direção ao Pacman ou randomicamente se o parâmetro `random` estiver definido como True
+        new_pos_ghosts1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
+        new_pos_ghosts2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
+
+        # Verificar se as posições são válidas, caso contrário, mantêm-se na posição atual
+        if self._is_invalid_move(new_pos_ghosts1, board, board_size):
+            new_pos_ghosts1 = pos_ghosts1
+
+        if self._is_invalid_move(new_pos_ghosts2, board, board_size):
+            new_pos_ghosts2 = pos_ghosts2
+
+        return {"ghosts1": new_pos_ghosts1, "ghosts2": new_pos_ghosts2}
+
+    def _move_towards_target(
+        self, pos: Tuple[int, int], target_pos: Tuple[int, int], board: list, board_size: Tuple[int, int]
+    ) -> Tuple[int, int]:
+        # Definir as direções possíveis
+        directions = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+
+        best_move = pos
+        shortest_distance = float("inf")
+
+        for direction, (dx, dy) in directions.items():
+            new_x, new_y = pos[0] + dx, pos[1] + dy
+
+            if 0 <= new_x < board_size[0] and 0 <= new_y < board_size[1] and board[new_x][new_y] not in ["-", "P"]:
+                # Calcular a distância de Manhattan para o Pacman
+                distance = abs(new_x - target_pos[0]) + abs(new_y - target_pos[1])
+
+                # Verificar se a nova posição não é uma parede ou uma posição bloqueada
+                if distance < shortest_distance:
+                    best_move = (new_x, new_y)
+                    shortest_distance = distance
+
+        return best_move
+
+    def _is_invalid_move(self, pos: Tuple[int, int], board: list, board_size: Tuple[int, int]) -> bool:
+        x, y = pos
+        return not (0 <= x < board_size[0] and 0 <= y < board_size[1] and board[x][y] != "-")
+
+
