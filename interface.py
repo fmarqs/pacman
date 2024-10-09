@@ -78,7 +78,7 @@ def move_pacman(direction):
         pacman_pos[0] += 1
 
 # Função para renderizar sprites na tela
-def draw_sprites():
+def draw_sprites(pacman_pos, ghost1_pos, ghost2_pos):
     # Desenhar Pacman
     screen.blit(pacman_img, (pacman_pos[0] * BLOCK_SIZE, pacman_pos[1] * BLOCK_SIZE))
     # Desenhar fantasmas
@@ -86,27 +86,27 @@ def draw_sprites():
     screen.blit(ghost2_img, (ghost2_pos[0] * BLOCK_SIZE, ghost2_pos[1] * BLOCK_SIZE))
 
 # Loop principal do jogo
-clock = pygame.time.Clock()
-while True:
-    screen.fill(BLACK)
-    draw_maze()
-    draw_sprites()
+# clock = pygame.time.Clock()
+# while True:
+#     screen.fill(BLACK)
+#     draw_maze()
+#     draw_sprites()
 
-    # Eventos de teclado para mover o Pacman
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == KEYDOWN:
-            if event.key == K_UP:
-                move_pacman("up")
-            elif event.key == K_DOWN:
-                move_pacman("down")
-            elif event.key == K_LEFT:
-                move_pacman("left")
-            elif event.key == K_RIGHT:
-                move_pacman("right")
+#     # Eventos de teclado para mover o Pacman
+#     for event in pygame.event.get():
+#         if event.type == QUIT:
+#             pygame.quit()
+#             sys.exit()
+#         elif event.type == KEYDOWN:
+#             if event.key == K_UP:
+#                 move_pacman("up")
+#             elif event.key == K_DOWN:
+#                 move_pacman("down")
+#             elif event.key == K_LEFT:
+#                 move_pacman("left")
+#             elif event.key == K_RIGHT:
+#                 move_pacman("right")
 
-    # Atualizar a tela
-    pygame.display.flip()
-    clock.tick(10)
+#     # Atualizar a tela
+#     pygame.display.flip()
+#     clock.tick(10)

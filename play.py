@@ -2,6 +2,7 @@ from pacman import pacman
 from game import game
 from ghosts import ghosts
 from utility import utility
+from interface import *
 
 import time  # Adicione essa linha para importar a função sleep
 
@@ -15,8 +16,17 @@ class play:
 
     def start(self):
         delay = 0.75  # Defina o valor do delay em segundos
-
+        clock = pygame.time.Clock()
+        
+        pacman_pos = [1, 1]  # Posição inicial do Pacman
+        ghost1_pos = [13, 1]  # Posição inicial do primeiro fantasma
+        ghost2_pos = [14, 3]  # Posição inicial do segundo fantasma
+        
         while True:
+            screen.fill(BLACK)
+            draw_maze()
+            draw_sprites(pacman_pos, ghost1_pos, ghost2_pos)
+
             self.game.display()
 
             # Atualizar o estado anterior
@@ -41,11 +51,13 @@ class play:
 
             # Atualizar a posição do Pacman no jogo
             self.game.set_pos_pacman(new_pos_pacman)
+          
 
             # Obter as posições atuais dos fantasmas e do Pacman
             pos_g1 = self.game.get_pos_ghost(1)
             pos_g2 = self.game.get_pos_ghost(2)
             pos_pacman = self.game.get_pos_pacman()
+
 
             # Mover os fantasmas com base nas novas posições
             poses = self.ghosts.move_ghosts(
@@ -56,6 +68,14 @@ class play:
             self.game.set_pos_ghost(1, poses["ghosts1"])
             self.game.set_pos_ghost(2, poses["ghosts2"])
 
+            pacman_pos[0] = pos_pacman[0]
+            ghost1_pos[0] = pos_g1[0]
+            ghost2_pos[0] = pos_g2[0]
+
+            pacman_pos[1] = pos_pacman[1]
+            ghost1_pos[1] = pos_g1[1]
+            ghost2_pos[1] = pos_g2[1]
+            
             # Verificar se Pacman foi capturado por um fantasma
             if self.game.get_pos_pacman() == self.game.get_pos_ghost(1) or self.game.get_pos_pacman() == self.game.get_pos_ghost(2):
                 print("Pacman is caught by a ghost!")
@@ -69,7 +89,10 @@ class play:
                 self.game.set_board(board)
 
             time.sleep(delay)  # Pausar o jogo por 'delay' segundos antes de continuar
-
+            
+            # Atualizar a tela
+            pygame.display.flip()
+            clock.tick(10)
 
 
 
