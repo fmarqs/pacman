@@ -130,6 +130,14 @@ class game:
             self.move_ghosts()
             self.display()  # Atualizar e exibir o tabuleiro a cada movimento
 
+    def is_game_over(self) -> bool:
+        # Verificar se Pacman está na mesma posição que algum dos fantasmas
+        if self.pacman_position == self.ghost1_position or self.pacman_position == self.ghost2_position:
+            return True
+        # Verificar se não há mais comida no tabuleiro
+        if self.food_count <= 0:
+            return True
+        return False
 
 # Inicializar o jogo e iniciar a simulação
 game_instance = game()
