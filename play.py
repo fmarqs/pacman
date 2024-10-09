@@ -14,10 +14,13 @@ class play:
         self.utility = utility()
 
     def start(self):
-        delay = 0.75  # Defina o valor do delay em segundos (1 segundo neste exemplo)
+        delay = 0.75  # Defina o valor do delay em segundos
 
         while True:
             self.game.display()
+
+            # Atualizar o estado anterior
+            self.utility.update_previous_state(self.game)
 
             # Verificar se o jogo terminou
             if self.utility.is_game_finished(self.game):
@@ -29,7 +32,7 @@ class play:
 
             # Escolher a melhor ação para o Pacman
             best_action = self.pacman.best_action(self.game)
-            new_pos_pacmans = self.pacman.moves_pacman(
+            new_pos_pacman = self.pacman.moves_pacman(
                 self.game.get_pos_pacman(),
                 best_action,
                 self.game.get_size(),
@@ -37,7 +40,7 @@ class play:
             )
 
             # Atualizar a posição do Pacman no jogo
-            self.game.set_pos_pacman(new_pos_pacmans)
+            self.game.set_pos_pacman(new_pos_pacman)
 
             # Obter as posições atuais dos fantasmas e do Pacman
             pos_g1 = self.game.get_pos_ghost(1)
