@@ -12,8 +12,8 @@ class ghosts:
         if not isinstance(board_size, tuple) or len(board_size) != 2:
             raise ValueError(f"Valor inválido de board_size: {board_size}. Esperado (linhas, colunas).")
 
-        new_pos_ghosts1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
-        new_pos_ghosts2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
+        new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
+        new_pos_ghosts2, direction2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
 
         if self._is_invalid_move(new_pos_ghosts1, board, board_size):
             new_pos_ghosts1 = pos_ghosts1
@@ -21,7 +21,7 @@ class ghosts:
         if self._is_invalid_move(new_pos_ghosts2, board, board_size):
             new_pos_ghosts2 = pos_ghosts2
 
-        return {"ghosts1": new_pos_ghosts1, "ghosts2": new_pos_ghosts2}
+        return {"ghosts1": new_pos_ghosts1, "ghosts2": new_pos_ghosts2}, direction1, direction2
 
     def _move_towards_target(
         self, pos: Tuple[int, int], target_pos: Tuple[int, int], board: list, board_size: Tuple[int, int]
@@ -33,7 +33,6 @@ class ghosts:
 
             for direction, (dx, dy) in directions.items():
                 new_x, new_y = pos[0] + dx, pos[1] + dy
-
                 # Verificar se a nova posição é válida (não é parede e não é a posição atual do Pacman)
                 if (
                     0 <= new_x < board_size[0] and
@@ -44,8 +43,9 @@ class ghosts:
                     if distance < shortest_distance:
                         best_move = (new_x, new_y)
                         shortest_distance = distance
+                        aux = direction
 
-            return best_move
+            return best_move, aux
 
 
     def _is_invalid_move(self, pos: Tuple[int, int], board: list, board_size: Tuple[int, int]) -> bool:

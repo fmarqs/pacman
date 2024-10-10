@@ -104,15 +104,18 @@ while True:
 
     # Verificar se o jogo está em estado de Game Over
     if game_over:
+
+        # Eventos de teclado para fechar o jogo
+        for event in pygame.event.get():
+            if event.type == K_DOWN:
+                pygame.quit()
+                sys.exit()
+                    
         show_game_over_message(screen)  # Exibe a mensagem de Game Over na tela
         pygame.display.flip()
-        continue  # Pula a atualização de movimentação e entra em estado de espera
+           
 
-    # Eventos de teclado para fechar o jogo
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
+
 
     # Verificar se o jogo terminou
     if game_instance.is_terminal():
@@ -138,10 +141,38 @@ while True:
     pos_g2 = game_instance.get_pos_ghost(2)
     pos_pacman = game_instance.get_pos_pacman()
 
-    poses = ghost_ai.move_ghosts(
+
+    poses, d1, d2 = ghost_ai.move_ghosts(
     pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
     )
+    print("d1: ", d1)
+    print("d2: ", d2)
+    #sprites fantasmas 1
+    if best_action == 'up':
+        ghost1_img = load_image("Sprites/10.png")
 
+    elif best_action == 'down':
+        ghost1_img = load_image("Sprites/4.png")
+        
+    elif best_action == 'left':
+        ghost1_img = load_image("Sprites/0.png")
+    
+    elif best_action == 'right':
+        ghost1_img = load_image("Sprites/6.png")
+
+    #sprites fantasmas 2
+    if best_action == 'up':
+        ghost2_img = load_image("Sprites/44.png")
+
+    elif best_action == 'down':
+        ghost2_img = load_image("Sprites/39.png")
+        
+    elif best_action == 'left':
+        ghost2_img = load_image("Sprites/36.png")
+    
+    elif best_action == 'right':
+        ghost2_img = load_image("Sprites/40.png")
+  
     # Atualizar as posições dos fantasmas no jogo
     game_instance.set_pos_ghost(1, poses["ghosts1"])
     game_instance.set_pos_ghost(2, poses["ghosts2"])
