@@ -96,7 +96,7 @@ class game:
             new_y = y + 1
 
         # Verificar se a nova posição é válida e não é parede ou fantasma
-        if self.board[new_x][new_y] not in ['-', 'G', 'F']:
+        if self.board[new_x][new_y] not in ['-', 'G1', 'G2']:
             # Limpar a posição anterior do Pacman
             self.board[x][y] = ' ' if self.board[x][y] != '*' else '*'  # Deixar a comida no local se houver
             # Atualizar a nova posição do Pacman

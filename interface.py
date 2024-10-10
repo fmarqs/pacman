@@ -3,6 +3,7 @@ import sys
 from pygame.locals import *
 from game import game
 from pacman import pacman
+from ghosts import ghosts
 
 # Definir cores
 BLACK = (0, 0, 0)
@@ -20,6 +21,20 @@ WINDOW_HEIGHT = 10 * BLOCK_SIZE
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Pacman Game - IA Integration")
+
+# Variável de controle para indicar se o jogo acabou
+game_over = False
+
+# Definir a fonte para a mensagem de "Game Over"
+font = pygame.font.SysFont('arial', 36)
+
+def show_game_over_message(screen):
+    """
+    Exibe uma mensagem de Game Over no centro da tela.
+    """
+    game_over_text = font.render('GAME OVER - Pac-Man Capturado!', True, (255, 0, 0))
+    text_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+    screen.blit(game_over_text, text_rect)
 
 # Função para carregar imagem com verificação de erro
 def load_image(file_name):
@@ -44,6 +59,7 @@ if not pacman_img or not ghost1_img or not ghost2_img:
 # Criar uma instância do jogo e da IA do Pac-Man
 game_instance = game()
 pacman_ai = pacman()
+ghost_ai = ghosts()
 
 # Função para desenhar o labirinto
 def draw_maze():
@@ -69,12 +85,28 @@ def draw_sprites():
 
 # Loop principal do jogo
 clock = pygame.time.Clock()
-delay = 0.75  # Defina o valor do delay em segundos
+delay = 0.2  # Defina o valor do delay em segundos
+
+def verificar_colisao(game_instance) -> bool:
+    """
+    Verifica se Pac-Man colidiu com algum fantasma.
+    Retorna True se houver colisão, indicando que o jogo deve terminar com a vitória dos fantasmas.
+    """
+    pacman_pos = game_instance.get_pos_pacman()
+    ghost1_pos = game_instance.get_pos_ghost(1)
+    ghost2_pos = game_instance.get_pos_ghost(2)
+    return pacman_pos == ghost1_pos or pacman_pos == ghost2_pos
 
 while True:
     screen.fill(BLACK)
     draw_maze()
     draw_sprites()
+
+    # Verificar se o jogo está em estado de Game Over
+    if game_over:
+        show_game_over_message(screen)  # Exibe a mensagem de Game Over na tela
+        pygame.display.flip()
+        continue  # Pula a atualização de movimentação e entra em estado de espera
 
     # Eventos de teclado para fechar o jogo
     for event in pygame.event.get():
@@ -94,8 +126,32 @@ while True:
     best_action = pacman_ai.best_action(game_instance)
     game_instance.move_pacman(best_action)
 
+    # Verificar colisão após o movimento do Pac-Man
+    if verificar_colisao(game_instance):
+        game_over = True  # Pac-Man foi capturado por um fantasma
+        print("Pacman foi capturado por um fantasma! Jogo Terminado!")
+        continue  # Pula a atualização de movimentação e entra em estado de espera
+
+
     # Mover os fantasmas com base na lógica interna do jogo
-    game_instance.move_ghosts()
+    pos_g1 = game_instance.get_pos_ghost(1)
+    pos_g2 = game_instance.get_pos_ghost(2)
+    pos_pacman = game_instance.get_pos_pacman()
+
+    poses = ghost_ai.move_ghosts(
+    pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
+    )
+
+    # Atualizar as posições dos fantasmas no jogo
+    game_instance.set_pos_ghost(1, poses["ghosts1"])
+    game_instance.set_pos_ghost(2, poses["ghosts2"])
+
+    # Verificar colisão após o movimento dos fantasmas
+    if verificar_colisao(game_instance):
+        game_over = True  # Pac-Man foi capturado por um fantasma
+        print("Pacman foi capturado por um fantasma! Jogo Terminado!")
+        continue  # Pula a atualização de movimentação e entra em estado de espera
+
 
     # Atualizar a tela
     pygame.display.flip()

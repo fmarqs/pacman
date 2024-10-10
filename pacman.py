@@ -113,49 +113,32 @@ class pacman:
         :param beta: Valor beta para poda.
         :return: Valor heurístico do melhor movimento.
         """
-        # Verifica se a profundidade máxima foi atingida ou se o jogo terminou
         if depth == 0 or game_state.is_terminal():
+            # Passa as posições corretas dos fantasmas como lista
             return self.heuristic_evaluation(
-                pacman_position=game_state.get_pos_pacman(),
-                ghost_positions=[game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],
-                pill_positions=self.get_pill_positions(game_state.get_board()),
-                score=game_state.score
+                game_state.get_pos_pacman(),
+                [game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],
+                self.get_pill_positions(game_state.get_board()),
+                game_state.score
             )
 
-        if maximizing_player:  # Turno do Pac-Man
+        if maximizing_player:  # Pac-Man's turn
             max_eval = float('-inf')
             for move in game_state.get_pacman_moves():
-                # Cria um novo estado ao aplicar o movimento do Pac-Man
                 new_state = game_state.apply_move(move, is_pacman=True)
-                # Avalia o estado com profundidade reduzida e passa a vez para os fantasmas
                 eval = self.minimax(game_state=new_state, depth=depth - 1, maximizing_player=False, alpha=alpha, beta=beta)
                 max_eval = max(max_eval, eval)
                 alpha = max(alpha, eval)
-                # Poda se possível
                 if beta <= alpha:
                     break
             return max_eval
-        else:  # Turno dos Fantasmas
+        else:  # Ghosts' turn
             min_eval = float('inf')
-            # Obter movimentos possíveis dos fantasmas
-            ghost_moves = game_state.get_ghost_moves()
-            if not ghost_moves:
-                # Se não há movimentos válidos para os fantasmas, retorna a avaliação atual
-                return self.heuristic_evaluation(
-                    pacman_position=game_state.get_pos_pacman(),
-                    ghost_positions=[game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],
-                    pill_positions=self.get_pill_positions(game_state.get_board()),
-                    score=game_state.score
-                )
-            
-            for move in ghost_moves:
-                # Cria um novo estado ao aplicar o movimento dos fantasmas
+            for move in game_state.get_ghost_moves():
                 new_state = game_state.apply_move(move, is_pacman=False)
-                # Avalia o estado com profundidade reduzida e passa a vez para o Pac-Man
                 eval = self.minimax(game_state=new_state, depth=depth - 1, maximizing_player=True, alpha=alpha, beta=beta)
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)
-                # Poda se possível
                 if beta <= alpha:
                     break
             return min_eval
