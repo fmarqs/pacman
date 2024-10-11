@@ -1,209 +1,102 @@
-from typing import Tuple, List
 import random as r
+from typing import List, Tuple
 from utility import utility
 from game import game
-from ghosts import ghosts
-
 
 class pacman:
     def __init__(self):
-        self._ways_possible_for_ghosts = ["up", "down", "left", "right"]
         self.utility = utility()
-        self.previous_positions = []  # Lista para armazenar as posições anteriores do Pac-Man
-    
-    def update_previous_positions(self, position):
-        if len(self.previous_positions) > 10:  # Limite para o histórico de posições
-            self.previous_positions.pop(0)  # Remove a posição mais antiga
-        self.previous_positions.append(position)
-
-    def is_repeated_move(self, new_position):
-        # Verifica se a nova posição já está nas últimas 10 posições anteriores
-        return new_position in self.previous_positions
+        self.population_size = 20  # Tamanho da população
+        self.generations = 50      # Número de gerações
+        self.mutation_rate = 0.1   # Taxa de mutação
+        self.sequence_length = 10  # Número de ações em cada indivíduo
+        self._ways_possible_for_ghosts = ["up", "down", "left", "right"]
 
     def best_action(self, state):
-        actions_values = [
-            (
-                action,
-                self.minimax(
-                    game_state=self.transfer(create_copy_state(state), action, True),
-                    depth=5,
-                    maximizing_player=False,
-                    alpha=float('-inf'),
-                    beta=float('inf')
-                ),
-            )
-            for action in self._ways_possible_for_pacman(state)
-        ]
+        # Inicializa a população com indivíduos aleatórios (sequências de ações)
+        population = [self.random_sequence() for _ in range(self.population_size)]
+        
+        for generation in range(self.generations):
+            # Avalia a aptidão de cada indivíduo na população
+            fitness_scores = [(ind, self.evaluate_fitness(ind, state)) for ind in population]
+            
+            # Seleciona os melhores indivíduos com base no fitness
+            selected_population = self.selection(fitness_scores)
 
-        # Filtra as ações que não levam a um movimento repetido
-        actions_values = [(action, value) for action, value in actions_values if not self.is_repeated_move(self.moves_pacman(state.get_pos_pacman(), action, state.get_size(), state.get_board()))]
-
-        if not actions_values:
-            # Se todas as ações levam a movimentos repetidos, faça um movimento qualquer
-            actions_values = [
-                (
-                    action,
-                    self.minimax(
-                        game_state=self.transfer(create_copy_state(state), action, True),
-                        depth=5,
-                        maximizing_player=False,
-                        alpha=float('-inf'),
-                        beta=float('inf')
-                    ),
-                )
-                for action in self._ways_possible_for_pacman(state)
-            ]
-
-        max_value = max(actions_values, key=lambda temp: temp[1])[1]
-        best_actions = [action for action, value in actions_values if value == max_value]
-
-        # Se a melhor ação for um movimento repetido, escolha aleatoriamente
-        if len(best_actions) > 1:
-            best_action = r.choice(best_actions)
-        else:
-            best_action = best_actions[0]
-
-        # Atualiza a lista de posições anteriores com a nova posição do Pac-Man
-        new_position = self.moves_pacman(state.get_pos_pacman(), best_action, state.get_size(), state.get_board())
-        self.update_previous_positions(new_position)
-
-        print(f"Ação escolhida pelo pacman: {best_action}")
+            # Gera a próxima geração por cruzamento e mutação
+            population = self.next_generation(selected_population)
+        
+        # Escolhe o melhor indivíduo após as gerações
+        best_individual = max(population, key=lambda ind: self.evaluate_fitness(ind, state))
+        best_action = best_individual[0]  # Retorna a primeira ação da melhor sequência
+        
+        print(f"Ação escolhida pelo algoritmo genético: {best_action}")
         return best_action
 
+    def random_sequence(self) -> List[str]:
+        """ Gera uma sequência aleatória de ações. """
+        return [r.choice(self._ways_possible_for_ghosts) for _ in range(self.sequence_length)]
+    
+    def evaluate_fitness(self, individual: List[str], state) -> float:
+        """ Avalia a aptidão de uma sequência de ações simulando o jogo. """
+        temp_state = create_copy_state(state)
+        score = 0
+        
+        for action in individual:
+            new_state = self.transfer(temp_state, action, is_pacman=True)
+            score += new_state.score  # Atualiza a pontuação
+            temp_state = new_state  # Continua simulando no novo estado
+        
+        return score
 
-    def manhattan_distance(self, point1, point2):
-        """
-        Calcula a distância de Manhattan entre dois pontos.
-        :param point1: Tuple com as coordenadas (x, y) do primeiro ponto.
-        :param point2: Tuple com as coordenadas (x, y) do segundo ponto.
-        :return: Distância de Manhattan entre os dois pontos.
-        """
-        return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
+    def selection(self, fitness_scores: List[Tuple[List[str], float]]) -> List[List[str]]:
+        """ Seleciona os melhores indivíduos com base no fitness. """
+        fitness_scores.sort(key=lambda x: x[1], reverse=True)  # Ordena por pontuação
+        selected = [ind for ind, score in fitness_scores[:self.population_size // 2]]  # Seleciona metade da população
+        return selected
 
-    def heuristic_evaluation(self, pacman_position, ghost_positions, pill_positions, score):
-        """
-        Avalia o estado atual do jogo com base na posição do Pac-Man, posições dos fantasmas e posição das pílulas.
-        :param pacman_position: Posição atual do Pac-Man.
-        :param ghost_positions: Lista com as posições dos fantasmas.
-        :param pill_positions: Lista com as posições das pílulas restantes.
-        :param score: Pontuação atual do jogo.
-        :return: Valor heurístico para o estado atual.
-        """
-        # Calcula a distância de Manhattan entre Pac-Man e os fantasmas mais próximos
-        ghost_distances = [self.manhattan_distance(pacman_position, ghost) for ghost in ghost_positions]
-        ghost_distance = min(ghost_distances) if ghost_distances else 0
+    def next_generation(self, selected_population: List[List[str]]) -> List[List[str]]:
+        """ Gera a próxima geração por cruzamento e mutação. """
+        new_population = []
 
-        # Calcula a distância de Manhattan entre Pac-Man e a pílula mais próxima
-        pill_distances = [self.manhattan_distance(pacman_position, pill) for pill in pill_positions]
-        pill_distance = min(pill_distances) if pill_distances else 0
+        # Cruzamento
+        for _ in range(self.population_size):
+            parent1, parent2 = r.sample(selected_population, 2)
+            child = self.crossover(parent1, parent2)
+            new_population.append(self.mutation(child))
 
-        # Penalidades e recompensas com pesos ajustáveis
-        ghost_penalty = 10 if ghost_distance > 0 else 0
-        pill_reward = 5 if pill_distance > 0 else 0
+        return new_population
 
-        return score - (ghost_penalty / ghost_distance if ghost_distance > 0 else 0) + (pill_reward / pill_distance if pill_distance > 0 else 0)
+    def crossover(self, parent1: List[str], parent2: List[str]) -> List[str]:
+        """ Realiza o cruzamento entre dois pais. """
+        crossover_point = r.randint(0, self.sequence_length - 1)
+        return parent1[:crossover_point] + parent2[crossover_point:]
 
-    def minimax(self, *, game_state, depth, maximizing_player, alpha, beta):
-        """
-        Implementa o algoritmo Minimax com poda alfa-beta.
-        :param game_state: Estado atual do jogo (objeto da classe game).
-        :param depth: Profundidade atual de busca.
-        :param maximizing_player: Booleano indicando se é a vez do Pac-Man (maximizing player) ou dos fantasmas (minimizing player).
-        :param alpha: Valor alfa para poda.
-        :param beta: Valor beta para poda.
-        :return: Valor heurístico do melhor movimento.
-        """
-        if depth == 0 or game_state.is_terminal():
-            # Passa as posições corretas dos fantasmas como lista
-            return self.heuristic_evaluation(
-                game_state.get_pos_pacman(),
-                [game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],
-                self.get_pill_positions(game_state.get_board()),
-                game_state.score
-            )
-
-        if maximizing_player:  # Pac-Man's turn
-            max_eval = float('-inf')
-            for move in game_state.get_pacman_moves():
-                new_state = game_state.apply_move(move, is_pacman=True)
-                eval = self.minimax(game_state=new_state, depth=depth - 1, maximizing_player=False, alpha=alpha, beta=beta)
-                max_eval = max(max_eval, eval)
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break
-            return max_eval
-        else:  # Ghosts' turn
-            min_eval = float('inf')
-            for move in game_state.get_ghost_moves():
-                new_state = game_state.apply_move(move, is_pacman=False)
-                eval = self.minimax(game_state=new_state, depth=depth - 1, maximizing_player=True, alpha=alpha, beta=beta)
-                min_eval = min(min_eval, eval)
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break
-            return min_eval
-
-    def get_pill_positions(self, board):
-        """
-        Encontra todas as posições das pílulas no tabuleiro.
-        :param board: Representação do tabuleiro.
-        :return: Lista com as coordenadas das pílulas.
-        """
-        pill_positions = []
-        for i in range(len(board)):
-            for j in range(len(board[i])):
-                if board[i][j] == '*':  # Identificar as pílulas
-                    pill_positions.append((i, j))
-        return pill_positions
+    def mutation(self, individual: List[str]) -> List[str]:
+        """ Realiza a mutação em um indivíduo com uma certa probabilidade. """
+        for i in range(self.sequence_length):
+            if r.random() < self.mutation_rate:
+                individual[i] = r.choice(self._ways_possible_for_ghosts)
+        return individual
 
     def transfer(self, state, action, is_pacman):
+        """ Atualiza o estado do jogo após uma ação do Pac-Man. """
+        new_state = create_copy_state(state)
         if is_pacman:
-            new_state = create_copy_state(state)
             xp, yp = state.get_pos_pacman()
             board = state.get_board()
             board_size = state.get_size()
 
             new_pos_pacman = self.moves_pacman((xp, yp), action, board_size, board)
             new_state.set_pos_pacman(new_pos_pacman)
-            return new_state
-
         else:
-            G = ghosts()
-            new_state = create_copy_state(state)
-            pos_g1 = state.get_pos_ghost(1)
-            pos_g2 = state.get_pos_ghost(2)
-            board = state.get_board()
-            board_size = state.get_size()
+            # Movimento dos fantasmas pode ser implementado aqui
+            pass
 
-            new_pos_ghosts = G.move_ghosts(pos_g1, pos_g2, state.get_pos_pacman(), board, board_size)
-
-            new_state.set_pos_ghost(1, new_pos_ghosts["ghosts1"])
-            new_state.set_pos_ghost(2, new_pos_ghosts["ghosts2"])
-
-            return new_state
-
-    def _ways_possible_for_pacman(self, state) -> List[str]:
-        # Determina as ações possíveis para o Pacman no estado atual do jogo
-        x, y = state.get_pos_pacman()
-        board = state.get_board()
-        board_size = state.get_size()
-
-        actions = []
-
-        # Verifica se cada direção está livre e não é uma parede
-        if x > 0 and board[x - 1][y] != "-" and board[x - 1][y] not in ['G', 'F']:
-            actions.append("up")
-        if x < board_size[0] - 1 and board[x + 1][y] != "-" and board[x + 1][y] not in ['G', 'F']:
-            actions.append("down")
-        if y > 0 and board[x][y - 1] != "-" and board[x][y - 1] not in ['G', 'F']:
-            actions.append("left")
-        if y < board_size[1] - 1 and board[x][y + 1] != "-" and board[x][y + 1] not in ['G', 'F']:
-            actions.append("right")
-
-        return actions
+        return new_state
 
     def moves_pacman(self, pacman_pos: Tuple[int, int], way_posibale: str, board_size: Tuple[int, int], board: List[List[str]]) -> Tuple[int, int]:
-        # Move o Pacman para uma nova posição com base na direção fornecida
+        """ Move o Pacman para uma nova posição com base na direção fornecida. """
         x, y = pacman_pos
         ways = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
         dx, dy = ways[way_posibale]
@@ -213,9 +106,8 @@ class pacman:
             return (new_x, new_y)
         return pacman_pos
 
-
 def create_copy_state(state) -> game:
-    # Cria uma cópia do estado atual do jogo
+    """ Cria uma cópia do estado atual do jogo. """
     new_board = game()
     new_board.set_pos_pacman(state.get_pos_pacman())
     new_board.set_pos_ghost(1, state.get_pos_ghost(1))
