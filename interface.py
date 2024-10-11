@@ -127,77 +127,81 @@ while running:
             print("** PACMAN WIN !!!")
         else:
             print("PACMAN LOST !")
-        continue
-
-    # Escolher a melhor ação para o Pacman usando a IA
-    best_action = pacman_ai.best_action(game_instance)
-    game_instance.move_pacman(best_action)
-    
-    #sprites woody_man 
-    if best_action == 'right':
-        pacman_img = load_image("Sprites/woody_d.png")
-
-    elif best_action == 'left':
-        pacman_img = load_image("Sprites/woody_e.png")
         
-    # Verificar colisão após o movimento do Pac-Man
-    if verificar_colisao(game_instance):
-        game_over = True  # Pac-Man foi capturado por um fantasma
-        print("Pacman foi capturado por um fantasma! Jogo Terminado!")
-        continue  # Pula a atualização de movimentação e entra em estado de espera
-
-
-    # Mover os fantasmas com base na lógica interna do jogo
-    pos_g1 = game_instance.get_pos_ghost(1)
-    pos_g2 = game_instance.get_pos_ghost(2)
-    pos_pacman = game_instance.get_pos_pacman()
-
-
-    poses, d1, d2 = ghost_ai.move_ghosts(
-    pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
-    )
-    print("d1: ", d1)
-    print("d2: ", d2)
     
-    #sprites fantasma 1 
-    if best_action == 'up':
-        ghost1_img = load_image("Sprites/10.png")
-
-    elif best_action == 'down':
-        ghost1_img = load_image("Sprites/4.png")
+    if game_over:
+        show_game_over_message(screen)
+    
+    else:
+        # Escolher a melhor ação para o Pacman usando a IA
+        best_action = pacman_ai.best_action(game_instance)
+        game_instance.move_pacman(best_action)
         
-    elif best_action == 'left':
-        ghost1_img = load_image("Sprites/0.png")
-    
-    elif best_action == 'right':
-        ghost1_img = load_image("Sprites/6.png")
+        #sprites woody_man 
+        if best_action == 'right':
+            pacman_img = load_image("Sprites/woody_d.png")
 
-    #sprites fantasma 2
-    if best_action == 'up':
-        ghost2_img = load_image("Sprites/44.png")
+        elif best_action == 'left':
+            pacman_img = load_image("Sprites/woody_e.png")
+            
+        # Verificar colisão após o movimento do Pac-Man
+        if verificar_colisao(game_instance):
+            game_over = True  # Pac-Man foi capturado por um fantasma
+            print("Pacman foi capturado por um fantasma! Jogo Terminado!")
+            continue  # Pula a atualização de movimentação e entra em estado de espera
 
-    elif best_action == 'down':
-        ghost2_img = load_image("Sprites/39.png")
+
+        # Mover os fantasmas com base na lógica interna do jogo
+        pos_g1 = game_instance.get_pos_ghost(1)
+        pos_g2 = game_instance.get_pos_ghost(2)
+        pos_pacman = game_instance.get_pos_pacman()
+
+
+        poses, d1, d2 = ghost_ai.move_ghosts(
+        pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
+        )
+        print("d1: ", d1)
+        print("d2: ", d2)
         
-    elif best_action == 'left':
-        ghost2_img = load_image("Sprites/36.png")
-    
-    elif best_action == 'right':
-        ghost2_img = load_image("Sprites/40.png")
-  
-    # Atualizar as posições dos fantasmas no jogo
-    game_instance.set_pos_ghost(1, poses["ghosts1"])
-    game_instance.set_pos_ghost(2, poses["ghosts2"])
+        #sprites fantasma 1 
+        if best_action == 'up':
+            ghost1_img = load_image("Sprites/10.png")
 
-    # Verificar colisão após o movimento dos fantasmas
-    if verificar_colisao(game_instance):
-        game_over = True  # Pac-Man foi capturado por um fantasma
-        print("Pacman foi capturado por um fantasma! Jogo Terminado!")
-        continue  # Pula a atualização de movimentação e entra em estado de espera
+        elif best_action == 'down':
+            ghost1_img = load_image("Sprites/4.png")
+            
+        elif best_action == 'left':
+            ghost1_img = load_image("Sprites/0.png")
+        
+        elif best_action == 'right':
+            ghost1_img = load_image("Sprites/6.png")
+
+        #sprites fantasma 2
+        if best_action == 'up':
+            ghost2_img = load_image("Sprites/44.png")
+
+        elif best_action == 'down':
+            ghost2_img = load_image("Sprites/39.png")
+            
+        elif best_action == 'left':
+            ghost2_img = load_image("Sprites/36.png")
+        
+        elif best_action == 'right':
+            ghost2_img = load_image("Sprites/40.png")
+    
+        # Atualizar as posições dos fantasmas no jogo
+        game_instance.set_pos_ghost(1, poses["ghosts1"])
+        game_instance.set_pos_ghost(2, poses["ghosts2"])
+
+        # Verificar colisão após o movimento dos fantasmas
+        if verificar_colisao(game_instance):
+            game_over = True  # Pac-Man foi capturado por um fantasma
+            print("Pacman foi capturado por um fantasma! Jogo Terminado!")
+            continue  # Pula a atualização de movimentação e entra em estado de espera
 
     
     # Atualizar a tela
     display_score(screen, game_instance.score)
     pygame.display.flip()
-    clock.tick(10)
+    clock.tick(30)
     pygame.time.wait(int(delay * 1000))
