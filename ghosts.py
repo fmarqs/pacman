@@ -12,8 +12,39 @@ class ghosts:
         if not isinstance(board_size, tuple) or len(board_size) != 2:
             raise ValueError(f"Valor inválido de board_size: {board_size}. Esperado (linhas, colunas).")
 
-        new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
-        new_pos_ghosts2, direction2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
+        random_number = r.randint(1, 5)
+        g1 = pos_ghosts1
+        g2 = pos_ghosts2
+
+        if random_number == 1:
+            new_pos_ghosts1 = (g1[0]+1), g1[1]
+            new_pos_ghosts2 = (g2[0]-1), g2[1]
+            direction1 = 'left'
+            direction2 = 'right'
+
+        if random_number == 2:
+            new_pos_ghosts1 = g1[0], (g1[1]-1)
+            new_pos_ghosts2 = g2[0], (g2[1]+1)
+            direction1 = 'up'
+            direction2 = 'down'
+        
+        if random_number == 3:
+            new_pos_ghosts1 = (g1[0]-1), g1[1]
+            new_pos_ghosts2 = (g2[0]+1), g2[1]
+            direction1 = 'right'
+            direction2 = 'left'
+        
+        if random_number == 4:
+            new_pos_ghosts1 = g1[0], (g1[1]+1)
+            new_pos_ghosts2 = g2[0], (g2[1]-1)
+            direction1 = 'down'
+            direction2 = 'up'
+
+        if random_number == 5:
+            new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
+            new_pos_ghosts2, direction2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
+
+
 
         if self._is_invalid_move(new_pos_ghosts1, board, board_size):
             new_pos_ghosts1 = pos_ghosts1

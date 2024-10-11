@@ -109,6 +109,7 @@ class game:
             self.board[new_x][new_y] = 'P'
 
     def move_ghosts(self):
+        
         # Movimentação aleatória para os fantasmas
         for ghost_num in [1, 2]:
             ghost_pos = self.get_pos_ghost(ghost_num)
@@ -123,7 +124,7 @@ class game:
                 new_pos = r.choice(valid_moves)
                 # Atualizar a posição do fantasma no tabuleiro
                 self.board[x][y] = '*' if self.board[x][y] == '*' else ' '  # Restaurar comida se existir
-                self.set_pos_ghost(ghost_num, new_pos)
+                self.set_pos_ghost(2, new_pos)
                 self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
 
     def get_ghost_moves(self) -> List[Tuple[int, int]]:
