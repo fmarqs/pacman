@@ -27,6 +27,15 @@ game_over = False
 
 # Definir a fonte para a mensagem de "Game Over"
 font = pygame.font.SysFont('arial', 36)
+font_s = pygame.font.SysFont('arial', 12)
+
+def display_score(screen, score):
+    # Renderizar o texto da pontuação
+    score_text = font_s.render(f"Score: {score}", True, WHITE)
+    
+    # Posicionar o texto no canto superior esquerdo da tela
+    screen.blit(score_text, (10, 10))
+
 
 def show_game_over_message(screen):
     """
@@ -46,7 +55,7 @@ def load_image(file_name):
         return None
 
 # Carregar imagens dos sprites com verificação
-pacman_img = load_image("Sprites/95.png")
+pacman_img = load_image("Sprites/woody_d.png")
 ghost1_img = load_image("Sprites/0.png")
 ghost2_img = load_image("Sprites/17.png")
 
@@ -97,38 +106,40 @@ def verificar_colisao(game_instance) -> bool:
     ghost2_pos = game_instance.get_pos_ghost(2)
     return pacman_pos == ghost1_pos or pacman_pos == ghost2_pos
 
-while True:
+running = True
+while running:
     screen.fill(BLACK)
     draw_maze()
     draw_sprites()
 
-    # Verificar se o jogo está em estado de Game Over
-    if game_over:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-        # Eventos de teclado para fechar o jogo
-        for event in pygame.event.get():
-            if event.type == K_DOWN:
-                pygame.quit()
-                sys.exit()
-                    
-        show_game_over_message(screen)  # Exibe a mensagem de Game Over na tela
-        pygame.display.flip()
+        # Verificar se estamos no estado de Game Over
+        if game_over:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                running = False  # Sai do jogo se a tecla "Enter" for pressionada
            
-
-
-
     # Verificar se o jogo terminou
     if game_instance.is_terminal():
         if game_instance.food_count == 0:
             print("** PACMAN WIN !!!")
         else:
             print("PACMAN LOST !")
-        break
+        continue
 
     # Escolher a melhor ação para o Pacman usando a IA
     best_action = pacman_ai.best_action(game_instance)
     game_instance.move_pacman(best_action)
+    
+    #sprites woody_man 
+    if best_action == 'right':
+        pacman_img = load_image("Sprites/woody_d.png")
 
+    elif best_action == 'left':
+        pacman_img = load_image("Sprites/woody_e.png")
+        
     # Verificar colisão após o movimento do Pac-Man
     if verificar_colisao(game_instance):
         game_over = True  # Pac-Man foi capturado por um fantasma
@@ -147,7 +158,8 @@ while True:
     )
     print("d1: ", d1)
     print("d2: ", d2)
-    #sprites fantasmas 1
+    
+    #sprites fantasma 1 
     if best_action == 'up':
         ghost1_img = load_image("Sprites/10.png")
 
@@ -160,7 +172,7 @@ while True:
     elif best_action == 'right':
         ghost1_img = load_image("Sprites/6.png")
 
-    #sprites fantasmas 2
+    #sprites fantasma 2
     if best_action == 'up':
         ghost2_img = load_image("Sprites/44.png")
 
@@ -183,8 +195,9 @@ while True:
         print("Pacman foi capturado por um fantasma! Jogo Terminado!")
         continue  # Pula a atualização de movimentação e entra em estado de espera
 
-
+    
     # Atualizar a tela
+    display_score(screen, game_instance.score)
     pygame.display.flip()
     clock.tick(10)
     pygame.time.wait(int(delay * 1000))
