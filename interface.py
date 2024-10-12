@@ -13,9 +13,9 @@ YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
 
 # Tamanho dos blocos e da janela
-BLOCK_SIZE = 40
-WINDOW_WIDTH = 18 * BLOCK_SIZE
-WINDOW_HEIGHT = 10 * BLOCK_SIZE
+BLOCK_SIZE = 35
+WINDOW_WIDTH = 28 * BLOCK_SIZE
+WINDOW_HEIGHT = 26 * BLOCK_SIZE
 
 # Inicializar o pygame
 pygame.init()
@@ -45,6 +45,15 @@ def show_game_over_message(screen):
     text_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
     screen.blit(game_over_text, text_rect)
 
+def show_victory_message(screen):
+    """
+    Exibe uma mensagem de vitória no centro da tela.
+    """
+    victory_text = font.render('VICTORY - Pac-Man Venceu!', True, (0, 255, 0))
+    text_rect = victory_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+    screen.blit(victory_text, text_rect)
+
+
 # Função para carregar imagem com verificação de erro
 def load_image(file_name):
     try:
@@ -70,14 +79,27 @@ game_instance = game()
 pacman_ai = pacman()
 ghost_ai = ghosts()
 
-# Função para desenhar o labirinto
+# def draw_maze():
+#     for y, row in enumerate(game_instance.get_board()):
+#         for x, cell in enumerate(row):
+#             if cell == "-":
+#                 # Desenhar linhas em vez de blocos
+#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, y * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE), 5)  # Linha superior
+#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, y * BLOCK_SIZE), (x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha esquerda
+#                 pygame.draw.line(screen, BLUE, ((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha direita
+#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha inferior
+#             elif cell == "*":
+#                 pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 5)
+
 def draw_maze():
     for y, row in enumerate(game_instance.get_board()):
         for x, cell in enumerate(row):
-            if cell == "-":
-                pygame.draw.rect(screen, BLUE, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
-            elif cell == "*":
-                pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 5)
+            if cell == '-':  # Desenhar uma parede
+                # Desenhar as paredes com linhas grossas (3 pixels de espessura)
+                pygame.draw.rect(screen, BLUE, pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
+            elif cell == '*':  # Espaços vazios para movimento
+               pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 5)
+
 
 # Função para renderizar sprites na tela
 def draw_sprites():
@@ -94,7 +116,7 @@ def draw_sprites():
 
 # Loop principal do jogo
 clock = pygame.time.Clock()
-delay = 0.2  # Defina o valor do delay em segundos
+delay = 0.1  # Defina o valor do delay em segundos
 
 def verificar_colisao(game_instance) -> bool:
     """
@@ -117,20 +139,23 @@ while running:
             running = False
 
         # Verificar se estamos no estado de Game Over
-        if game_over:
+        if game_over or game_instance.food_count == 0:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 running = False  # Sai do jogo se a tecla "Enter" for pressionada
            
     # Verificar se o jogo terminou
     if game_instance.is_terminal():
         if game_instance.food_count == 0:
-            print("** PACMAN WIN !!!")
+            show_victory_message(screen)
+            game_over = True
         else:
-            print("PACMAN LOST !")
+            show_game_over_message(screen)  
+            game_over = True
         
     
     if game_over:
-        show_game_over_message(screen)
+        pygame.display.flip()
+        continue
     
     else:
         # Escolher a melhor ação para o Pacman usando a IA

@@ -2,7 +2,7 @@ import random as r
 from typing import Tuple, List
 
 class game:
-    def __init__(self, size_board=(10, 18), pacman_position=(1, 1), ghost1_position=(1, 16), ghost2_position=(3, 15), score=0):
+    def __init__(self, size_board=(26, 28), pacman_position=(14, 14), ghost1_position=(8, 13), ghost2_position=(8, 14), score=0):
         self.size_board = size_board
         self.pacman_position = pacman_position
         self.ghost1_position = ghost1_position
@@ -15,17 +15,33 @@ class game:
     def create_board_game(self):
         # Novo layout do labirinto fornecido
         maze_layout = [
-            "------------------",
-            "-***--***********-",
-            "-********-*-*****-",
-            "-****---*-**--***-",
-            "-********-*******-",
-            "-**----****----**-",
-            "-********-*******-",
-            "--*--********--*--",
-            "-******--********-",
-            "------------------"
-        ]
+        "----------------------------",  # 1
+        "-************--************-",  # 2
+        "-*----*-----*--*-----*----*-",  # 3
+        "-**************************-",  # 4
+        "-*----*--*--------*--*----*-",  # 5
+        "-******--****--****--******-",  # 6
+        "------*-----*--*-----*------",  # 7
+        "------*-----*--*-----*------",  # 8
+        "------*--**********--*------",  # 9
+        "------*--*--------*--*------",  # 10
+        "------*--*--------*--*------",  # 11
+        " *********--------********* ",  # 12
+        "------*--*--------*--*------",  # 13
+        "------*--*--------*--*------",  # 14
+        "------*--**********--*------",   # 15
+        "-************--************-",  # 16
+        "-*----*-----*--*-----*----*-", # 17
+        "-*----*-----*--*-----*----*-",  # 18
+        "-***--****************--***-",  # 19
+        "---*--*--*--------*--*--*---",  # 20
+        "---*--*--*--------*--*--*---",  # 21
+        "-******--****--****--******-",  # 22
+        "-*----------*--*----------*-",  # 23
+        "-*----------*--*----------*-",  # 24
+        "-**************************-",  # 25
+        "----------------------------",  # 26
+    ]
 
         # Inicializa o tabuleiro com o layout fornecido
         self.board = [list(row) for row in maze_layout]
@@ -59,6 +75,10 @@ class game:
         self.board = board
 
     def get_pos_pacman(self) -> Tuple[int, int]:
+        if self.pacman_position == [11, 28]:
+            self.pacman_position = [1, 1]
+        elif self.pacman_position == [11, 0]:
+            self.pacman_position = [11, 27]
         return self.pacman_position
 
     def set_pos_pacman(self, new_pos: Tuple[int, int]) -> None:
@@ -98,35 +118,83 @@ class game:
         # Verificar se a nova posição é válida e não é parede ou fantasma
         if self.board[new_x][new_y] not in ['-', 'G1', 'G2']:
             # Limpar a posição anterior do Pacman
-            self.board[x][y] = ' ' if self.board[x][y] != '*' else '*'  # Deixar a comida no local se houver
+            self.board[x][y] = ' '  # Sempre limpar a célula anterior
+
             # Atualizar a nova posição do Pacman
             self.pacman_position = (new_x, new_y)
-            # Comer comida se existir
-            if self.board[new_x][new_y] == '*':
+
+            # Atualizar a nova posição do Pacman, considerando portais
+            if new_x == 11 and new_y == 0:  # Portal à esquerda
+                self.pacman_position = (11, 27)  # Teleporta para o lado direito
+            elif new_x == 11 and new_y == 27:  # Portal à direita
+                self.pacman_position = (11, 0)  # Teleporta para o lado esquerdo
+            else:
+                self.pacman_position = (new_x, new_y)
+
+            # Verificar se Pacman está na mesma célula da comida
+            if self.board[new_x][new_y] == '*':  # Pacman só come comida se estiver na mesma célula
                 self.score += 10
                 self.food_count -= 1
+                self.board[new_x][new_y] = ' '  # Remover comida após comer
+
             # Atualizar o tabuleiro
-            self.board[new_x][new_y] = 'P'
+            self.board[new_x][new_y] = 'P'  # Pacman agora está nesta célula
 
     def move_ghosts(self):
-        
-        # Movimentação aleatória para os fantasmas
         for ghost_num in [1, 2]:
             ghost_pos = self.get_pos_ghost(ghost_num)
             x, y = ghost_pos
 
             # Movimentos possíveis (cima, baixo, esquerda, direita)
             possible_moves = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-            valid_moves = [(nx, ny) for (nx, ny) in possible_moves if self.board[nx][ny] not in ['-', 'P', 'G', 'G2']]
+
+            # Verificar se os movimentos são válidos (dentro dos limites e sem teleportes)
+            valid_moves = [
+                (nx, ny) for (nx, ny) in possible_moves
+                if 0 <= nx < self.size_board[0] and 0 <= ny < self.size_board[1]
+                and self.board[nx][ny] not in ['-', 'P', f'G{ghost_num}', f'G{3 - ghost_num}']
+            ]
 
             if valid_moves:
                 # Escolher um movimento aleatório válido
                 new_pos = r.choice(valid_moves)
-                # Atualizar a posição do fantasma no tabuleiro
-                self.board[x][y] = '*' if self.board[x][y] == '*' else ' '  # Restaurar comida se existir
-                self.set_pos_ghost(2, new_pos)
-                self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
 
+                # Limpar a posição anterior do fantasma
+                if self.board[x][y] == f'G{ghost_num}':
+                    self.board[x][y] = ' '  # Limpa a posição anterior do fantasma
+
+                # Mover o fantasma para a nova posição, preservando a comida se houver
+                if self.board[new_pos[0]][new_pos[1]] == '*':  # Manter a comida ao passar
+                    self.set_pos_ghost(ghost_num, new_pos)
+                else:
+                    self.set_pos_ghost(ghost_num, new_pos)
+                    self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
+
+    def get_pacman_moves(self) -> List[str]:
+        """
+        Retorna todos os movimentos possíveis para o Pac-Man no estado atual do jogo.
+        Os movimentos possíveis são ('up', 'down', 'left', 'right') se não houver paredes.
+        :return: Lista de movimentos possíveis para o Pac-Man.
+        """
+        x, y = self.pacman_position
+        board_size = self.get_size()
+
+        possible_moves = []
+        # Verificar se Pac-Man pode se mover para cima
+        if x > 0 and self.board[x - 1][y] not in ['-', 'G1', 'G2']:
+            possible_moves.append('up')
+        # Verificar se Pac-Man pode se mover para baixo
+        if x < board_size[0] - 1 and self.board[x + 1][y] not in ['-', 'G1', 'G2']:
+            possible_moves.append('down')
+        # Verificar se Pac-Man pode se mover para a esquerda
+        if y > 0 and self.board[x][y - 1] not in ['-', 'G1', 'G2']:
+            possible_moves.append('left')
+        # Verificar se Pac-Man pode se mover para a direita
+        if y < board_size[1] - 1 and self.board[x][y + 1] not in ['-', 'G1', 'G2']:
+            possible_moves.append('right')
+
+        return possible_moves
+    
     def get_ghost_moves(self) -> List[Tuple[int, int]]:
         """
         Retorna todos os movimentos possíveis para os fantasmas no estado atual do jogo.
@@ -166,6 +234,45 @@ class game:
             0 <= y < self.size_board[1] and
             self.board[x][y] not in ['-', 'P', 'G', 'G2']  # Não pode ser parede, pacman ou outro fantasma
         )
+    
+    def move_back(self, move):
+        """
+        Reverte o último movimento do Pac-Man com base na direção passada.
+        :param move: Direção que Pac-Man se moveu ('up', 'down', 'left', 'right').
+        """
+        if move == "up":
+            self.move_pacman('down')
+        elif move == "down":
+            self.move_pacman('up')
+        elif move == "left":
+            self.move_pacman('right')
+        elif move == "right":
+            self.move_pacman('left')
+
+    def move_back_ghost(self, move):
+        """
+        Reverte o último movimento dos fantasmas com base na direção passada.
+        :param move: Direção que o fantasma se moveu ('up', 'down', 'left', 'right').
+        """
+        for ghost_num in [1, 2]:
+            ghost_pos = self.get_pos_ghost(ghost_num)
+            x, y = ghost_pos
+
+            # Inicializa new_x e new_y com a posição atual do fantasma
+            new_x, new_y = x, y
+
+            # Determina o movimento reverso baseado na direção
+            if move == "up":
+                new_x, new_y = x + 1, y  # Inverte o movimento para baixo
+            elif move == "down":
+                new_x, new_y = x - 1, y  # Inverte o movimento para cima
+            elif move == "left":
+                new_x, new_y = x, y + 1  # Inverte o movimento para a direita
+            elif move == "right":
+                new_x, new_y = x, y - 1  # Inverte o movimento para a esquerda
+
+            # Atualiza a posição do fantasma
+            self.set_pos_ghost(ghost_num, (new_x, new_y))
 
     def is_terminal(self) -> bool:
         """
@@ -174,7 +281,7 @@ class game:
         :return: True se o estado do jogo é terminal, False caso contrário.
         """
         # Verificar se Pac-Man foi capturado por um fantasma
-        if self.pacman_position == self.ghost1_position or self.pacman_position == self.ghost2_position:
+        if self.get_pos_pacman() == self.get_pos_ghost(1) or self.get_pos_pacman() == self.get_pos_ghost(2):
             return True
 
         # Verificar se todas as comidas foram comidas
@@ -232,31 +339,6 @@ class game:
             new_state.move_ghosts()  # Esse método deve mover todos os fantasmas
 
         return new_state
-    
-    def get_pacman_moves(self) -> List[str]:
-        """
-        Retorna todos os movimentos possíveis para o Pac-Man no estado atual do jogo.
-        Os movimentos possíveis são ('up', 'down', 'left', 'right') se não houver paredes.
-        :return: Lista de movimentos possíveis para o Pac-Man.
-        """
-        x, y = self.pacman_position
-        board_size = self.get_size()
-
-        possible_moves = []
-        # Verificar se Pac-Man pode se mover para cima
-        if x > 0 and self.board[x - 1][y] not in ['-', 'G', 'G2']:
-            possible_moves.append('up')
-        # Verificar se Pac-Man pode se mover para baixo
-        if x < board_size[0] - 1 and self.board[x + 1][y] not in ['-', 'G', 'G2']:
-            possible_moves.append('down')
-        # Verificar se Pac-Man pode se mover para a esquerda
-        if y > 0 and self.board[x][y - 1] not in ['-', 'G', 'G2']:
-            possible_moves.append('left')
-        # Verificar se Pac-Man pode se mover para a direita
-        if y < board_size[1] - 1 and self.board[x][y + 1] not in ['-', 'G', 'G2']:
-            possible_moves.append('right')
-
-        return possible_moves
 
 
 

@@ -6,6 +6,7 @@ class utility:
         self.max_history = 10  # Número máximo de estados armazenados
         self.repeated_state_penalty = 200  # Penalidade para estados repetidos
 
+
     def get_utility(self, state):
         import random
 

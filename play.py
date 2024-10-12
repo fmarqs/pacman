@@ -14,7 +14,7 @@ class play:
         self.utility = utility()
 
     def start(self):
-        delay = 0.75  # Defina o valor do delay em segundos
+        delay = 0.2  # Defina o valor do delay em segundos
 
         while True:
             self.game.display()
