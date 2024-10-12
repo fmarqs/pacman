@@ -1,5 +1,6 @@
 from typing import Tuple, List
 import random as r
+import heapq
 from utility import utility
 from game import game
 from ghosts import ghosts
@@ -70,51 +71,29 @@ class pacman:
         print(f"Ação escolhida pelo pacman: {best_action}")
         return best_action
 
-
     def manhattan_distance(self, point1, point2):
-        """
-        Calcula a distância de Manhattan entre dois pontos.
-        :param point1: Tuple com as coordenadas (x, y) do primeiro ponto.
-        :param point2: Tuple com as coordenadas (x, y) do segundo ponto.
-        :return: Distância de Manhattan entre os dois pontos.
-        """
         return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
     def heuristic_evaluation(self, pacman_position, ghost_positions, pill_positions, score):
-        """
-        Avalia o estado atual do jogo com base na posição do Pac-Man, posições dos fantasmas e posição das pílulas.
-        :param pacman_position: Posição atual do Pac-Man.
-        :param ghost_positions: Lista com as posições dos fantasmas.
-        :param pill_positions: Lista com as posições das pílulas restantes.
-        :param score: Pontuação atual do jogo.
-        :return: Valor heurístico para o estado atual.
-        """
-        # Calcula a distância de Manhattan entre Pac-Man e os fantasmas mais próximos
         ghost_distances = [self.manhattan_distance(pacman_position, ghost) for ghost in ghost_positions]
         ghost_distance = min(ghost_distances) if ghost_distances else 0
 
-        # Calcula a distância de Manhattan entre Pac-Man e a pílula mais próxima
         pill_distances = [self.manhattan_distance(pacman_position, pill) for pill in pill_positions]
         pill_distance = min(pill_distances) if pill_distances else 0
 
-        # Penalidades e recompensas com pesos ajustáveis
-        ghost_penalty = 10 if ghost_distance > 0 else 0
-        pill_reward = 5 if pill_distance > 0 else 0
+        # Ajustando penalidades e recompensas
+        if ghost_distance < 5:
+            ghost_penalty = 100
+        else:
+            ghost_penalty = 10 / ghost_distance
 
-        return score - (ghost_penalty / ghost_distance if ghost_distance > 0 else 0) + (pill_reward / pill_distance if pill_distance > 0 else 0)
+        # Recompensa mais alta para pílulas mais próximas
+        pill_reward = 100 / pill_distance if pill_distance > 0 else 0
+
+        return score - ghost_penalty + pill_reward
 
     def minimax(self, *, game_state, depth, maximizing_player, alpha, beta):
-        """
-        Implementa o algoritmo Minimax com poda alfa-beta.
-        :param game_state: Estado atual do jogo (objeto da classe game).
-        :param depth: Profundidade atual de busca.
-        :param maximizing_player: Booleano indicando se é a vez do Pac-Man (maximizing player) ou dos fantasmas (minimizing player).
-        :param alpha: Valor alfa para poda.
-        :param beta: Valor beta para poda.
-        :return: Valor heurístico do melhor movimento.
-        """
         if depth == 0 or game_state.is_terminal():
-            # Passa as posições corretas dos fantasmas como lista
             return self.heuristic_evaluation(
                 game_state.get_pos_pacman(),
                 [game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],
@@ -122,7 +101,7 @@ class pacman:
                 game_state.score
             )
 
-        if maximizing_player:  # Pac-Man's turn
+        if maximizing_player:
             max_eval = float('-inf')
             for move in game_state.get_pacman_moves():
                 new_state = game_state.apply_move(move, is_pacman=True)
@@ -132,7 +111,7 @@ class pacman:
                 if beta <= alpha:
                     break
             return max_eval
-        else:  # Ghosts' turn
+        else:
             min_eval = float('inf')
             for move in game_state.get_ghost_moves():
                 new_state = game_state.apply_move(move, is_pacman=False)
@@ -142,17 +121,63 @@ class pacman:
                 if beta <= alpha:
                     break
             return min_eval
+        
+    def pacman_decision(self, game_state, minimax_depth=3):
+        remaining_food = game_state.get_remaining_food_positions()
+        if len(remaining_food) <= 5:
+            pacman_pos = game_state.get_pos_pacman()
+            closest_pill = min(remaining_food, key=lambda pill: self.heuristic(pacman_pos, pill))
+            path = self.a_star_search(game_state, pacman_pos, closest_pill)
+
+            if path:
+                next_pos = path[0]
+                if next_pos[0] > pacman_pos[0]:
+                    return 'down'
+                elif next_pos[0] < pacman_pos[0]:
+                    return 'up'
+                elif next_pos[1] > pacman_pos[1]:
+                    return 'right'
+                elif next_pos[1] < pacman_pos[1]:
+                    return 'left'
+        
+        return self.minimax(game_state, depth=minimax_depth, maximizing_player=True)
+
+    def a_star_search(self, game_state, start, goal):
+        frontier = [(0, start)]
+        came_from = {start: None}
+        cost_so_far = {start: 0}
+        
+        while frontier:
+            _, current = heapq.heappop(frontier)
+            
+            if current == goal:
+                break
+            
+            for next in game_state.get_neighbors(current):
+                new_cost = cost_so_far[current] + 1  # Cada movimento tem custo 1
+                if next not in cost_so_far or new_cost < cost_so_far[next]:
+                    cost_so_far[next] = new_cost
+                    priority = new_cost + self.heuristic(goal, next)
+                    heapq.heappush(frontier, (priority, next))
+                    came_from[next] = current
+
+        # Reconstruir o caminho
+        path = []
+        current = goal
+        while current != start:
+            path.append(current)
+            current = came_from[current]
+        path.reverse()  # Inverter para obter o caminho da origem até o destino
+        return path
+
+    def heuristic(self, a, b):
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
     def get_pill_positions(self, board):
-        """
-        Encontra todas as posições das pílulas no tabuleiro.
-        :param board: Representação do tabuleiro.
-        :return: Lista com as coordenadas das pílulas.
-        """
         pill_positions = []
         for i in range(len(board)):
             for j in range(len(board[i])):
-                if board[i][j] == '*':  # Identificar as pílulas
+                if board[i][j] == '*':
                     pill_positions.append((i, j))
         return pill_positions
 
@@ -183,35 +208,33 @@ class pacman:
             return new_state
 
     def _ways_possible_for_pacman(self, state) -> List[str]:
-        # Determina as ações possíveis para o Pacman no estado atual do jogo
         x, y = state.get_pos_pacman()
         board = state.get_board()
         board_size = state.get_size()
-
         actions = []
 
-        # Verifica se cada direção está livre e não é uma parede
-        if x > 0 and board[x - 1][y] != "-" and board[x - 1][y] not in ['G', 'F']:
+        if x > 0 and board[x - 1][y] != "-":
             actions.append("up")
-        if x < board_size[0] - 1 and board[x + 1][y] != "-" and board[x + 1][y] not in ['G', 'F']:
+        if x < board_size[0] - 1 and board[x + 1][y] != "-":
             actions.append("down")
-        if y > 0 and board[x][y - 1] != "-" and board[x][y - 1] not in ['G', 'F']:
+        if y > 0 and board[x][y - 1] != "-":
             actions.append("left")
-        if y < board_size[1] - 1 and board[x][y + 1] != "-" and board[x][y + 1] not in ['G', 'F']:
+        if y < board_size[1] - 1 and board[x][y + 1] != "-":
             actions.append("right")
 
         return actions
 
-    def moves_pacman(self, pacman_pos: Tuple[int, int], way_posibale: str, board_size: Tuple[int, int], board: List[List[str]]) -> Tuple[int, int]:
-        # Move o Pacman para uma nova posição com base na direção fornecida
-        x, y = pacman_pos
-        ways = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
-        dx, dy = ways[way_posibale]
-        new_x, new_y = x + dx, y + dy
-
-        if 0 <= new_x < board_size[0] and 0 <= new_y < board_size[1] and board[new_x][new_y] != "-":
-            return (new_x, new_y)
-        return pacman_pos
+    def moves_pacman(self, pos: Tuple[int, int], action: str, board_size: Tuple[int, int], board) -> Tuple[int, int]:
+        x, y = pos
+        if action == "up" and x > 0 and board[x - 1][y] != "-":
+            return x - 1, y
+        elif action == "down" and x < board_size[0] - 1 and board[x + 1][y] != "-":
+            return x + 1, y
+        elif action == "left" and y > 0 and board[x][y - 1] != "-":
+            return x, y - 1
+        elif action == "right" and y < board_size[1] - 1 and board[x][y + 1] != "-":
+            return x, y + 1
+        return pos  # Retorna a posição original se o movimento não for permitido
 
 
 def create_copy_state(state) -> game:

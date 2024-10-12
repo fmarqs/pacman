@@ -161,7 +161,9 @@ while running:
         # Escolher a melhor ação para o Pacman usando a IA
         best_action = pacman_ai.best_action(game_instance)
         game_instance.move_pacman(best_action)
-        
+        # Escolher a melhor ação para o Pacman usando Minimax e A*
+
+
         #sprites woody_man 
         if best_action == 'right':
             pacman_img = load_image("Sprites/woody_d.png")
@@ -182,12 +184,15 @@ while running:
         pos_pacman = game_instance.get_pos_pacman()
 
 
-        poses, d1, d2 = ghost_ai.move_ghosts(
+        # poses, d1, d2 = ghost_ai.move_ghosts(
+        # pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
+        # )
+
+        poses = ghost_ai.move_ghosts(
         pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
         )
-        print("d1: ", d1)
-        print("d2: ", d2)
         
+
         #sprites fantasma 1 
         if best_action == 'up':
             ghost1_img = load_image("Sprites/10.png")
@@ -228,5 +233,5 @@ while running:
     # Atualizar a tela
     display_score(screen, game_instance.score)
     pygame.display.flip()
-    clock.tick(30)
+    clock.tick(60)
     pygame.time.wait(int(delay * 1000))
