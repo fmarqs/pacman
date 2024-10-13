@@ -20,7 +20,45 @@ class pacman:
         # Verifica se a nova posição já está nas últimas 10 posições anteriores
         return new_position in self.previous_positions
 
+    def _find_nearest_food_direction(self, state, pacman_pos):
+        """
+        Encontra a direção da comida mais próxima se estiver ao redor de Pacman.
+        :param state: O estado atual do jogo.
+        :param pacman_pos: A posição atual do Pacman.
+        :return: Direção para se mover em direção à comida ou None.
+        """
+        x, y = pacman_pos
+        board = state.get_board()
+        directions = {
+            "up": (x - 1, y),
+            "down": (x + 1, y),
+            "left": (x, y - 1),
+            "right": (x, y + 1)
+        }
+
+        # Verificar cada direção ao redor de Pacman para encontrar comida
+        for direction, (new_x, new_y) in directions.items():
+            if 0 <= new_x < len(board) and 0 <= new_y < len(board[0]):
+                if board[new_x][new_y] == '*':
+                    return direction
+
+        return None
+
     def best_action(self, state):
+        pacman_pos = state.get_pos_pacman()
+        ghost_positions = [state.get_pos_ghost(1), state.get_pos_ghost(2)]
+
+        # Se há um fantasma por perto, tenta escapar
+        if self.is_ghost_nearby(pacman_pos, ghost_positions):
+            return self.best_escape_action(state, pacman_pos, ghost_positions)
+
+        # Verifica se Pacman está perto de comida e prioriza comer
+        nearest_food_direction = self._find_nearest_food_direction(state, pacman_pos)
+        if nearest_food_direction:
+            return nearest_food_direction
+
+
+        # Caso contrário, usa o Minimax para determinar a melhor ação
         actions_values = [
             (
                 action,
@@ -39,7 +77,7 @@ class pacman:
         actions_values = [(action, value) for action, value in actions_values if not self.is_repeated_move(self.moves_pacman(state.get_pos_pacman(), action, state.get_size(), state.get_board()))]
 
         if not actions_values:
-            # Se todas as ações levam a movimentos repetidos, faça um movimento qualquer
+            # Se todas as ações levam a movimentos repetidos, faz um movimento qualquer
             actions_values = [
                 (
                     action,
@@ -57,19 +95,14 @@ class pacman:
         max_value = max(actions_values, key=lambda temp: temp[1])[1]
         best_actions = [action for action, value in actions_values if value == max_value]
 
-        # Se a melhor ação for um movimento repetido, escolha aleatoriamente
-        if len(best_actions) > 1:
-            best_action = r.choice(best_actions)
-        else:
-            best_action = best_actions[0]
+        # Se a melhor ação for um movimento repetido, escolhe aleatoriamente
+        best_action = r.choice(best_actions) if len(best_actions) > 1 else best_actions[0]
 
-        # Atualiza a lista de posições anteriores com a nova posição do Pac-Man
+        # Atualiza a lista de posições anteriores com a nova posição do Pacman
         new_position = self.moves_pacman(state.get_pos_pacman(), best_action, state.get_size(), state.get_board())
         self.update_previous_positions(new_position)
 
-        print(f"Ação escolhida pelo pacman: {best_action}")
         return best_action
-
 
     def manhattan_distance(self, point1, point2):
         """
@@ -91,19 +124,84 @@ class pacman:
         """
         # Calcula a distância de Manhattan entre Pac-Man e os fantasmas mais próximos
         ghost_distances = [self.manhattan_distance(pacman_position, ghost) for ghost in ghost_positions]
-        ghost_distance = min(ghost_distances) if ghost_distances else 0
+        ghost_distance = min(ghost_distances) if ghost_distances else float('inf')
 
         # Calcula a distância de Manhattan entre Pac-Man e a pílula mais próxima
         pill_distances = [self.manhattan_distance(pacman_position, pill) for pill in pill_positions]
-        pill_distance = min(pill_distances) if pill_distances else 0
+        pill_distance = min(pill_distances) if pill_distances else float('inf')
 
-        # Penalidades e recompensas com pesos ajustáveis
-        ghost_penalty = 10 if ghost_distance > 0 else 0
-        pill_reward = 5 if pill_distance > 0 else 0
+        # Penalidade maior quando Pac-Man está perto dos fantasmas
+        ghost_penalty = 0
+        if ghost_distance <= 1:
+            ghost_penalty = -100000  # Fuga imediata se estiver a 1 bloco
+        elif ghost_distance <= 2:
+            ghost_penalty = -50000   # Penalidade severa se estiver a 2 blocos
+        elif ghost_distance <= 3:
+            ghost_penalty = -20000   # Penalidade moderada se estiver a 3 blocos
 
-        return score - (ghost_penalty / ghost_distance if ghost_distance > 0 else 0) + (pill_reward / pill_distance if pill_distance > 0 else 0)
+        # Recompensa pela proximidade da comida
+        pill_reward = 50 / pill_distance if pill_distance > 0 else 0
 
-    def minimax(self, *, game_state, depth, maximizing_player, alpha, beta):
+        # O valor heurístico é influenciado pela distância dos fantasmas e das pílulas
+        return score + pill_reward + ghost_penalty
+
+    def is_ghost_nearby(self, pacman_pos, ghost_positions, threshold=2):
+        """
+        Checks if any ghost is within a certain distance from Pacman.
+        :param pacman_pos: Tuple of Pacman's position (x, y).
+        :param ghost_positions: List of ghost positions [(x1, y1), (x2, y2)].
+        :param threshold: The minimum distance to consider a ghost as nearby.
+        :return: True if any ghost is within the threshold, otherwise False.
+        """
+        for ghost_pos in ghost_positions:
+            if self.manhattan_distance(pacman_pos, ghost_pos) <= threshold:
+                return True
+        return False
+
+    def best_escape_action(self, state, pacman_pos, ghost_positions):
+        """
+        Determines the best escape action for Pacman when a ghost is nearby.
+        :param state: Current game state.
+        :param pacman_pos: Current position of Pacman.
+        :param ghost_positions: List of ghost positions [(x1, y1), (x2, y2)].
+        :return: Direction that moves Pacman farther from the closest ghost.
+        """
+        best_move = None
+        max_distance_from_ghost = -float('inf')
+
+        for action in self._ways_possible_for_pacman(state):
+            new_pos = self.moves_pacman(pacman_pos, action, state.get_size(), state.get_board())
+            # Check the distance to the nearest ghost after the move
+            min_ghost_distance = min([self.manhattan_distance(new_pos, ghost) for ghost in ghost_positions])
+            if min_ghost_distance > max_distance_from_ghost:
+                best_move = action
+                max_distance_from_ghost = min_ghost_distance
+
+        return best_move
+
+
+    def _valid_moves_from(self, position: Tuple[int, int], board: List[List[str]]) -> List[str]:
+        """
+        Determines all valid moves Pacman can make from a given position.
+        :param position: Tuple with Pacman's current position (x, y).
+        :param board: The current state of the game board.
+        :return: List of valid directions ('up', 'down', 'left', 'right').
+        """
+        x, y = position
+        board_size = len(board), len(board[0])  # Size of the board
+        moves = []
+
+        directions = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+
+        for direction, (dx, dy) in directions.items():
+            new_x, new_y = x + dx, y + dy
+            if 0 <= new_x < board_size[0] and 0 <= new_y < board_size[1]:
+                if board[new_x][new_y] not in ["-", "G1", "G2"]:  # Valid if not a wall or ghost
+                    moves.append(direction)
+
+        return moves
+
+    def minimax(self, game_state, depth, maximizing_player, alpha, beta):
         """
         Implementa o algoritmo Minimax com poda alfa-beta.
         :param game_state: Estado atual do jogo (objeto da classe game).
@@ -114,7 +212,7 @@ class pacman:
         :return: Valor heurístico do melhor movimento.
         """
         if depth == 0 or game_state.is_terminal():
-            # Passa as posições corretas dos fantasmas como lista
+            # Ajuste aqui: passa apenas os 5 argumentos corretos
             return self.heuristic_evaluation(
                 game_state.get_pos_pacman(),
                 [game_state.get_pos_ghost(1), game_state.get_pos_ghost(2)],

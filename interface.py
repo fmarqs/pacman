@@ -116,7 +116,7 @@ def draw_sprites():
 
 # Loop principal do jogo
 clock = pygame.time.Clock()
-delay = 0.1  # Defina o valor do delay em segundos
+delay = 0 # Defina o valor do delay em segundos
 
 def verificar_colisao(game_instance) -> bool:
     """
@@ -138,14 +138,18 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        print(game_instance.food_count)
         # Verificar se estamos no estado de Game Over
-        if game_over or game_instance.food_count == 0:
+        if game_over or game_instance.food_count == 1:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 running = False  # Sai do jogo se a tecla "Enter" for pressionada
+            
+            
            
     # Verificar se o jogo terminou
     if game_instance.is_terminal():
-        if game_instance.food_count == 0:
+        print("is_terminal!!!")
+        if game_instance.food_count == 1:
             show_victory_message(screen)
             game_over = True
         else:

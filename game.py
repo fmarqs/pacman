@@ -2,7 +2,7 @@ import random as r
 from typing import Tuple, List
 
 class game:
-    def __init__(self, size_board=(26, 28), pacman_position=(14, 14), ghost1_position=(8, 13), ghost2_position=(8, 14), score=0):
+    def __init__(self, size_board=(26, 28), pacman_position=(14, 14), ghost1_position=(3, 4), ghost2_position=(21, 24), score=0):
         self.size_board = size_board
         self.pacman_position = pacman_position
         self.ghost1_position = ghost1_position
@@ -165,7 +165,7 @@ class game:
 
                 # Mover o fantasma para a nova posição, preservando a comida se houver
                 if self.board[new_pos[0]][new_pos[1]] == '*':  # Manter a comida ao passar
-                    self.set_pos_ghost(ghost_num, new_pos)
+                    self.set_pos_ghost(2, new_pos)
                 else:
                     self.set_pos_ghost(ghost_num, new_pos)
                     self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
@@ -285,7 +285,7 @@ class game:
             return True
 
         # Verificar se todas as comidas foram comidas
-        if self.food_count == 0:
+        if self.food_count == 1:
             return True
 
         # Caso contrário, o jogo não terminou
