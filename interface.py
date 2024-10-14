@@ -4,6 +4,7 @@ from pygame.locals import *
 from game import game
 from pacman import pacman
 from ghosts import ghosts
+from typing import Tuple
 
 # Definir cores
 BLACK = (0, 0, 0)
@@ -24,12 +25,15 @@ pygame.display.set_caption("Pacman Game - IA Integration")
 
 # Variável de controle para indicar se o jogo acabou
 game_over = False
+ghost_recovery_timer_1 = 0
+ghost_recovery_timer_2 = 0
 
 # Definir a fonte para a mensagem de "Game Over"
 font = pygame.font.SysFont('arial', 36)
 font_s = pygame.font.SysFont('arial', 12)
 
 def display_score(screen, score):
+    print(score)
     # Renderizar o texto da pontuação
     score_text = font_s.render(f"Score: {score}", True, WHITE)
     
@@ -99,6 +103,8 @@ def draw_maze():
                 pygame.draw.rect(screen, BLUE, pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
             elif cell == '*':  # Espaços vazios para movimento
                pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 5)
+            elif cell == 'o':  # Espaços vazios para movimento
+               pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 10)
 
 
 # Função para renderizar sprites na tela
@@ -116,17 +122,24 @@ def draw_sprites():
 
 # Loop principal do jogo
 clock = pygame.time.Clock()
-delay = 0 # Defina o valor do delay em segundos
+delay = 0.1 # Defina o valor do delay em segundos
 
-def verificar_colisao(game_instance) -> bool:
+def verificar_colisao(game_instance) -> Tuple[bool, int]:
     """
     Verifica se Pac-Man colidiu com algum fantasma.
-    Retorna True se houver colisão, indicando que o jogo deve terminar com a vitória dos fantasmas.
+    Retorna (True, ghost_num) se houver colisão, indicando que o jogo deve terminar
+    com a vitória dos fantasmas ou que Pacman comeu o fantasma.
     """
     pacman_pos = game_instance.get_pos_pacman()
     ghost1_pos = game_instance.get_pos_ghost(1)
     ghost2_pos = game_instance.get_pos_ghost(2)
-    return pacman_pos == ghost1_pos or pacman_pos == ghost2_pos
+    
+    if pacman_pos == ghost1_pos:
+        return True, 1  # Pacman colidiu com o fantasma 1
+    elif pacman_pos == ghost2_pos:
+        return True, 2  # Pacman colidiu com o fantasma 2
+    
+    return False, None
 
 running = True
 while running:
@@ -140,16 +153,21 @@ while running:
 
         print(game_instance.food_count)
         # Verificar se estamos no estado de Game Over
-        if game_over or game_instance.food_count == 1:
+        if game_over or game_instance.food_count == 0:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 running = False  # Sai do jogo se a tecla "Enter" for pressionada
-            
+
+    if(game_instance.ghosts_are_vulnerable):
+            if game_instance.power_mode_timer > 0:
+                game_instance.power_mode_timer -= 1
+            else:
+                game_instance.power_mode = False
+                game_instance.ghosts_are_vulnerable = False  # Fantasmas voltam ao comportamento normal
             
            
     # Verificar se o jogo terminou
     if game_instance.is_terminal():
-        print("is_terminal!!!")
-        if game_instance.food_count == 1:
+        if game_instance.food_count == 0:
             show_victory_message(screen)
             game_over = True
         else:
@@ -172,12 +190,45 @@ while running:
 
         elif best_action == 'left':
             pacman_img = load_image("Sprites/woody_e.png")
-            
+
+        colidiu, fantasma = verificar_colisao(game_instance)
+        ghost_recovery_timer = 0
+     
         # Verificar colisão após o movimento do Pac-Man
-        if verificar_colisao(game_instance):
-            game_over = True  # Pac-Man foi capturado por um fantasma
-            print("Pacman foi capturado por um fantasma! Jogo Terminado!")
-            continue  # Pula a atualização de movimentação e entra em estado de espera
+        print(verificar_colisao(game_instance))
+        if colidiu:
+            print(verificar_colisao(game_instance))
+            if game_instance.ghosts_are_vulnerable:
+                # Pacman come o fantasma vulnerável e ele vai para a prisão
+                print(f"Pacman comeu o fantasma {fantasma}!")
+                
+                # Enviar o fantasma comido para a prisão
+                if fantasma == 1:
+                    game_instance.set_pos_ghost(1, (12, 13))  # Fantasma 1 vai para a prisão
+                    ghost_recovery_timer_1 = 10
+                elif fantasma == 2:
+                    game_instance.set_pos_ghost(2, (12, 14))  # Fantasma 2 vai para a prisão
+                    ghost_recovery_timer_2 = 10
+
+            else:
+                # Caso contrário, Pacman foi capturado
+                game_over = True  # Pacman foi capturado por um fantasma
+                print("Pacman foi capturado por um fantasma! Jogo Terminado!")
+                continue  # Pula a atualização de movimentação e entra em estado de espera
+
+        print('GHOST RECOVERY:', ghost_recovery_timer)
+
+        if ghost_recovery_timer_1 > 0:
+            ghost_recovery_timer_1 -= 1
+            print(f"GHOST 1 RECOVERY TIMER: {ghost_recovery_timer_1}")
+        elif ghost_recovery_timer_1 == 0 and game_instance.get_pos_ghost(1) == (12, 13):
+            game_instance.set_pos_ghost(1, (8, 14))  # Fantasma 1 volta ao jogo
+
+        if ghost_recovery_timer_2 > 0:
+            ghost_recovery_timer_2 -= 1
+            print(f"GHOST 2 RECOVERY TIMER: {ghost_recovery_timer_2}")
+        elif ghost_recovery_timer_2 == 0 and game_instance.get_pos_ghost(2) == (12, 14):
+            game_instance.set_pos_ghost(2, (8, 14))  # Fantasma 2 volta ao jogo
 
 
         # Mover os fantasmas com base na lógica interna do jogo
@@ -186,49 +237,51 @@ while running:
         pos_pacman = game_instance.get_pos_pacman()
 
 
-        poses, d1, d2 = ghost_ai.move_ghosts(
-        pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
-        )
+        if not game_instance.ghosts_are_vulnerable:
+            poses, d1, d2 = ghost_ai.move_ghosts(
+            pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
+            )
+                 # Atualizar as posições dos fantasmas no jogo
+            game_instance.set_pos_ghost(1, poses["ghosts1"])
+            game_instance.set_pos_ghost(2, poses["ghosts2"])
         print("d1: ", d1)
         print("d2: ", d2)
-        
-        #sprites fantasma 1 
-        if best_action == 'up':
-            ghost1_img = load_image("Sprites/10.png")
 
-        elif best_action == 'down':
-            ghost1_img = load_image("Sprites/4.png")
+        print(game_instance.ghosts_are_vulnerable)
+        print(game_instance.power_mode_timer)
+
+        if game_instance.ghosts_are_vulnerable:
+            ghost1_img = load_image("Sprites/81.png")
+            ghost2_img = load_image("Sprites/81.png")
+        else: 
+            #sprites fantasma 1 
+            if best_action == 'up':
+                ghost1_img = load_image("Sprites/10.png")
+
+            elif best_action == 'down':
+                ghost1_img = load_image("Sprites/4.png")
+                
+            elif best_action == 'left':
+                ghost1_img = load_image("Sprites/0.png")
             
-        elif best_action == 'left':
-            ghost1_img = load_image("Sprites/0.png")
-        
-        elif best_action == 'right':
-            ghost1_img = load_image("Sprites/6.png")
+            elif best_action == 'right':
+                ghost1_img = load_image("Sprites/6.png")
 
-        #sprites fantasma 2
-        if best_action == 'up':
-            ghost2_img = load_image("Sprites/44.png")
+            #sprites fantasma 2
+            if best_action == 'up':
+                ghost2_img = load_image("Sprites/44.png")
 
-        elif best_action == 'down':
-            ghost2_img = load_image("Sprites/39.png")
+            elif best_action == 'down':
+                ghost2_img = load_image("Sprites/39.png")
+                
+            elif best_action == 'left':
+                ghost2_img = load_image("Sprites/36.png")
             
-        elif best_action == 'left':
-            ghost2_img = load_image("Sprites/36.png")
-        
-        elif best_action == 'right':
-            ghost2_img = load_image("Sprites/40.png")
+            elif best_action == 'right':
+                ghost2_img = load_image("Sprites/40.png")
     
-        # Atualizar as posições dos fantasmas no jogo
-        game_instance.set_pos_ghost(1, poses["ghosts1"])
-        game_instance.set_pos_ghost(2, poses["ghosts2"])
+   
 
-        # Verificar colisão após o movimento dos fantasmas
-        if verificar_colisao(game_instance):
-            game_over = True  # Pac-Man foi capturado por um fantasma
-            print("Pacman foi capturado por um fantasma! Jogo Terminado!")
-            continue  # Pula a atualização de movimentação e entra em estado de espera
-
-    
     # Atualizar a tela
     display_score(screen, game_instance.score)
     pygame.display.flip()

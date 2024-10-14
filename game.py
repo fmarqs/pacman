@@ -11,6 +11,9 @@ class game:
         self.board = None
         self.food_count = 0  # Contagem de comidas no tabuleiro
         self.create_board_game()
+        self.ghosts_are_vulnerable = False
+        self.power_mode_timer = 0
+        self.power_mode = False
 
     def create_board_game(self):
         # Novo layout do labirinto fornecido
@@ -18,16 +21,16 @@ class game:
         "----------------------------",  # 1
         "-************--************-",  # 2
         "-*----*-----*--*-----*----*-",  # 3
-        "-**************************-",  # 4
+        "-o************************o-",  # 4
         "-*----*--*--------*--*----*-",  # 5
         "-******--****--****--******-",  # 6
         "------*-----*--*-----*------",  # 7
         "------*-----*--*-----*------",  # 8
         "------*--**********--*------",  # 9
         "------*--*--------*--*------",  # 10
-        "------*--*--------*--*------",  # 11
-        " *********--------********* ",  # 12
-        "------*--*--------*--*------",  # 13
+        "------*--*-      -*--*------",  # 11
+        " *********-      -********* ",  # 12
+        "------*--*-      -*--*------",  # 13
         "------*--*--------*--*------",  # 14
         "------*--**********--*------",   # 15
         "-************--************-",  # 16
@@ -36,7 +39,7 @@ class game:
         "-***--****************--***-",  # 19
         "---*--*--*--------*--*--*---",  # 20
         "---*--*--*--------*--*--*---",  # 21
-        "-******--****--****--******-",  # 22
+        "-o*****--****--****--*****o-",  # 22
         "-*----------*--*----------*-",  # 23
         "-*----------*--*----------*-",  # 24
         "-**************************-",  # 25
@@ -47,7 +50,7 @@ class game:
         self.board = [list(row) for row in maze_layout]
 
         # Contar o número de comidas no layout fornecido
-        self.food_count = sum(row.count('*') for row in self.board)
+        self.food_count = 271
 
     def display(self) -> None:
         for x in range(self.size_board[0]):
@@ -100,6 +103,12 @@ class game:
         """Define um novo valor para o score do jogo."""
         self.score = new_score
 
+    def activate_power_mode(self):
+        self.power_mode = True
+        self.power_mode_timer = 25  
+        self.ghosts_are_vulnerable = True  # Fantasmas ficam vulneráveis
+
+
     def move_pacman(self, direction):
         # Posição atual do Pacman
         x, y = self.pacman_position
@@ -123,7 +132,7 @@ class game:
             # Atualizar a nova posição do Pacman
             self.pacman_position = (new_x, new_y)
 
-            # Atualizar a nova posição do Pacman, considerando portais
+             # Atualizar a nova posição do Pacman, considerando portais
             if new_x == 11 and new_y == 0:  # Portal à esquerda
                 self.pacman_position = (11, 27)  # Teleporta para o lado direito
             elif new_x == 11 and new_y == 27:  # Portal à direita
@@ -131,14 +140,17 @@ class game:
             else:
                 self.pacman_position = (new_x, new_y)
 
-            # Verificar se Pacman está na mesma célula da comida
-            if self.board[new_x][new_y] == '*':  # Pacman só come comida se estiver na mesma célula
+            # Verificar se Pacman comeu algo (comida ou especial)
+            if self.board[new_x][new_y] == '*':
                 self.score += 10
                 self.food_count -= 1
-                self.board[new_x][new_y] = ' '  # Remover comida após comer
+                self.board[new_x][new_y] = ' '  # Remover a comida
 
-            # Atualizar o tabuleiro
-            self.board[new_x][new_y] = 'P'  # Pacman agora está nesta célula
+            elif self.board[new_x][new_y] == 'o':  # Comida especial
+                self.score += 10
+                self.food_count -= 1
+                self.activate_power_mode()
+                self.board[new_x][new_y] = ' '  # Remover comida especial
 
     def move_ghosts(self):
         for ghost_num in [1, 2]:
@@ -285,7 +297,7 @@ class game:
             return True
 
         # Verificar se todas as comidas foram comidas
-        if self.food_count == 1:
+        if self.food_count == 0:
             return True
 
         # Caso contrário, o jogo não terminou
@@ -295,7 +307,7 @@ class game:
         # Simular movimentos para testes
         self.display()
         for _ in range(5):  # Movimentar 5 vezes para testar
-            self.move_pacman('right')
+            self.move_pacman('left')
             self.move_ghosts()
             self.display()  # Atualizar e exibir o tabuleiro a cada movimento
 

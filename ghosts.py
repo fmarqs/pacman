@@ -1,9 +1,10 @@
 from typing import Tuple, Dict
 import random as r
+from game import game
 
 class ghosts:
-    def __init__(self):
-        pass
+    def __init__(self) -> None:
+        self.game = game()
 
     def move_ghosts(
         self, pos_ghosts1: Tuple[int, int], pos_ghosts2: Tuple[int, int], pos_pacman: Tuple[int, int], board: list, board_size: Tuple[int, int], random: bool = False
@@ -11,9 +12,17 @@ class ghosts:
         # Verificar se board_size é uma tupla com dois elementos
         if not isinstance(board_size, tuple) or len(board_size) != 2:
             raise ValueError(f"Valor inválido de board_size: {board_size}. Esperado (linhas, colunas).")
-
+        
+        # Adicionando paralisação dos fantasmas quando vulneráveis
+        print('fantasmas estao vulneraveis?', self.game.ghosts_are_vulnerable)
+        if self.game.ghosts_are_vulnerable:
+            print('Fantasmas estão paralisados!')
+            return {"ghosts1": pos_ghosts1, "ghosts2": pos_ghosts2}, "stopped", "stopped"
+        
+        
         g1 = pos_ghosts1
         g2 = pos_ghosts2
+    
 
         if r.random() < 0.65:  # 50% chance de seguir Pac-Man, 50% chance de movimento aleatório
             new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)

@@ -49,8 +49,9 @@ class pacman:
         ghost_positions = [state.get_pos_ghost(1), state.get_pos_ghost(2)]
 
         # Se há um fantasma por perto, tenta escapar
-        if self.is_ghost_nearby(pacman_pos, ghost_positions):
-            return self.best_escape_action(state, pacman_pos, ghost_positions)
+        if not state.ghosts_are_vulnerable:
+            if self.is_ghost_nearby(pacman_pos, ghost_positions):
+                return self.best_escape_action(state, pacman_pos, ghost_positions)
 
         # Verifica se Pacman está perto de comida e prioriza comer
         nearest_food_direction = self._find_nearest_food_direction(state, pacman_pos)
