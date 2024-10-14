@@ -24,7 +24,7 @@ class ghosts:
         g2 = pos_ghosts2
     
 
-        if r.random() < 0.65:  # 50% chance de seguir Pac-Man, 50% chance de movimento aleatório
+        if r.random() < 0.70:  # 50% chance de seguir Pac-Man, 50% chance de movimento aleatório
             new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
             new_pos_ghosts2, direction2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
         

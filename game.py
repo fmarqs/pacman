@@ -105,7 +105,7 @@ class game:
 
     def activate_power_mode(self):
         self.power_mode = True
-        self.power_mode_timer = 25  
+        self.power_mode_timer = 40
         self.ghosts_are_vulnerable = True  # Fantasmas ficam vulneráveis
 
 

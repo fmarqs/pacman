@@ -218,16 +218,24 @@ while running:
 
         print('GHOST RECOVERY:', ghost_recovery_timer)
 
+        def ghost_in_prison(ghost):
+            ghost_pos = game_instance.get_pos_ghost(ghost)
+            # Verifica se a posição Y do fantasma está entre 11 e 16, com X sendo 10
+            if 10 <= ghost_pos[0] == 12 and 11 <= ghost_pos[1] <= 16:
+                return True
+
+            return False
+
         if ghost_recovery_timer_1 > 0:
             ghost_recovery_timer_1 -= 1
             print(f"GHOST 1 RECOVERY TIMER: {ghost_recovery_timer_1}")
-        elif ghost_recovery_timer_1 == 0 and game_instance.get_pos_ghost(1) == (12, 13):
+        elif ghost_recovery_timer_1 == 0 and ghost_in_prison(1):
             game_instance.set_pos_ghost(1, (8, 14))  # Fantasma 1 volta ao jogo
 
         if ghost_recovery_timer_2 > 0:
             ghost_recovery_timer_2 -= 1
             print(f"GHOST 2 RECOVERY TIMER: {ghost_recovery_timer_2}")
-        elif ghost_recovery_timer_2 == 0 and game_instance.get_pos_ghost(2) == (12, 14):
+        elif ghost_recovery_timer_2 == 0 and ghost_in_prison(2):
             game_instance.set_pos_ghost(2, (8, 14))  # Fantasma 2 volta ao jogo
 
 

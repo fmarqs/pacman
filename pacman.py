@@ -49,8 +49,10 @@ class pacman:
         ghost_positions = [state.get_pos_ghost(1), state.get_pos_ghost(2)]
 
         # Se há um fantasma por perto, tenta escapar
+        print('fantasmas paralizados??', state.ghosts_are_vulnerable)
         if not state.ghosts_are_vulnerable:
             if self.is_ghost_nearby(pacman_pos, ghost_positions):
+                print('best escape action ativado!!!')
                 return self.best_escape_action(state, pacman_pos, ghost_positions)
 
         # Verifica se Pacman está perto de comida e prioriza comer
@@ -146,7 +148,7 @@ class pacman:
         # O valor heurístico é influenciado pela distância dos fantasmas e das pílulas
         return score + pill_reward + ghost_penalty
 
-    def is_ghost_nearby(self, pacman_pos, ghost_positions, threshold=2):
+    def is_ghost_nearby(self, pacman_pos, ghost_positions, threshold=3):
         """
         Checks if any ghost is within a certain distance from Pacman.
         :param pacman_pos: Tuple of Pacman's position (x, y).
