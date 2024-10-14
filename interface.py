@@ -83,18 +83,6 @@ game_instance = game()
 pacman_ai = pacman()
 ghost_ai = ghosts()
 
-# def draw_maze():
-#     for y, row in enumerate(game_instance.get_board()):
-#         for x, cell in enumerate(row):
-#             if cell == "-":
-#                 # Desenhar linhas em vez de blocos
-#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, y * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE), 5)  # Linha superior
-#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, y * BLOCK_SIZE), (x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha esquerda
-#                 pygame.draw.line(screen, BLUE, ((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha direita
-#                 pygame.draw.line(screen, BLUE, (x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), ((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE), 5)  # Linha inferior
-#             elif cell == "*":
-#                 pygame.draw.circle(screen, WHITE, (x * BLOCK_SIZE + BLOCK_SIZE // 2, y * BLOCK_SIZE + BLOCK_SIZE // 2), 5)
-
 def draw_maze():
     for y, row in enumerate(game_instance.get_board()):
         for x, cell in enumerate(row):
@@ -122,7 +110,7 @@ def draw_sprites():
 
 # Loop principal do jogo
 clock = pygame.time.Clock()
-delay = 0.1 # Defina o valor do delay em segundos
+delay = 0 # Defina o valor do delay em segundos
 
 def verificar_colisao(game_instance) -> Tuple[bool, int]:
     """
@@ -161,12 +149,11 @@ while running:
             if game_instance.power_mode_timer > 0:
                 game_instance.power_mode_timer -= 1
             else:
-                game_instance.power_mode = False
                 game_instance.ghosts_are_vulnerable = False  # Fantasmas voltam ao comportamento normal
             
            
     # Verificar se o jogo terminou
-    if game_instance.is_terminal():
+    if game_instance.game_finished():
         if game_instance.food_count == 0:
             show_victory_message(screen)
             game_over = True
@@ -182,7 +169,7 @@ while running:
     else:
         # Escolher a melhor ação para o Pacman usando a IA
         best_action = pacman_ai.best_action(game_instance)
-        game_instance.move_pacman(best_action)
+        game_instance.move_pacman_validation(best_action)
         
         #sprites woody_man 
         if best_action == 'right':
@@ -246,17 +233,12 @@ while running:
 
 
         if not game_instance.ghosts_are_vulnerable:
-            poses, d1, d2 = ghost_ai.move_ghosts(
+            poses, d1, d2 = ghost_ai.move_ghosts_validation(
             pos_g1, pos_g2, pos_pacman, game_instance.get_board(), game_instance.get_size()
             )
                  # Atualizar as posições dos fantasmas no jogo
             game_instance.set_pos_ghost(1, poses["ghosts1"])
             game_instance.set_pos_ghost(2, poses["ghosts2"])
-        print("d1: ", d1)
-        print("d2: ", d2)
-
-        print(game_instance.ghosts_are_vulnerable)
-        print(game_instance.power_mode_timer)
 
         if game_instance.ghosts_are_vulnerable:
             ghost1_img = load_image("Sprites/81.png")

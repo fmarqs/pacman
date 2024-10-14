@@ -6,7 +6,7 @@ class ghosts:
     def __init__(self) -> None:
         self.game = game()
 
-    def move_ghosts(
+    def move_ghosts_validation(
         self, pos_ghosts1: Tuple[int, int], pos_ghosts2: Tuple[int, int], pos_pacman: Tuple[int, int], board: list, board_size: Tuple[int, int], random: bool = False
     ) -> Dict[str, Tuple[int, int]]:
         # Verificar se board_size é uma tupla com dois elementos
@@ -24,7 +24,7 @@ class ghosts:
         g2 = pos_ghosts2
     
 
-        if r.random() < 0.70:  # 50% chance de seguir Pac-Man, 50% chance de movimento aleatório
+        if r.random() < 0.75:  # 50% chance de seguir Pac-Man, 50% chance de movimento aleatório
             new_pos_ghosts1, direction1 = self._move_towards_target(pos_ghosts1, pos_pacman, board, board_size)
             new_pos_ghosts2, direction2 = self._move_towards_target(pos_ghosts2, pos_pacman, board, board_size)
         
@@ -55,8 +55,6 @@ class ghosts:
                 direction1 = 'down'
                 direction2 = 'up'
 
-
-
         if self._is_invalid_move(new_pos_ghosts1, board, board_size):
             new_pos_ghosts1 = pos_ghosts1
 
@@ -64,6 +62,7 @@ class ghosts:
             new_pos_ghosts2 = pos_ghosts2
 
         return {"ghosts1": new_pos_ghosts1, "ghosts2": new_pos_ghosts2}, direction1, direction2
+
 
     def _move_towards_target(
         self, pos: Tuple[int, int], target_pos: Tuple[int, int], board: list, board_size: Tuple[int, int]

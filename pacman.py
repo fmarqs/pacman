@@ -1,6 +1,5 @@
 from typing import Tuple, List
 import random as r
-from utility import utility
 from game import game
 from ghosts import ghosts
 
@@ -8,7 +7,6 @@ from ghosts import ghosts
 class pacman:
     def __init__(self):
         self._ways_possible_for_ghosts = ["up", "down", "left", "right"]
-        self.utility = utility()
         self.previous_positions = []  # Lista para armazenar as posições anteriores do Pac-Man
     
     def update_previous_positions(self, position):
@@ -148,7 +146,7 @@ class pacman:
         # O valor heurístico é influenciado pela distância dos fantasmas e das pílulas
         return score + pill_reward + ghost_penalty
 
-    def is_ghost_nearby(self, pacman_pos, ghost_positions, threshold=3):
+    def is_ghost_nearby(self, pacman_pos, ghost_positions, threshold=2):
         """
         Checks if any ghost is within a certain distance from Pacman.
         :param pacman_pos: Tuple of Pacman's position (x, y).
@@ -214,7 +212,7 @@ class pacman:
         :param beta: Valor beta para poda.
         :return: Valor heurístico do melhor movimento.
         """
-        if depth == 0 or game_state.is_terminal():
+        if depth == 0 or game_state.game_finished():
             # Ajuste aqui: passa apenas os 5 argumentos corretos
             return self.heuristic_evaluation(
                 game_state.get_pos_pacman(),
@@ -276,7 +274,7 @@ class pacman:
             board = state.get_board()
             board_size = state.get_size()
 
-            new_pos_ghosts = G.move_ghosts(pos_g1, pos_g2, state.get_pos_pacman(), board, board_size)
+            new_pos_ghosts = G.move_ghosts_validation(pos_g1, pos_g2, state.get_pos_pacman(), board, board_size)
 
             new_state.set_pos_ghost(1, new_pos_ghosts["ghosts1"])
             new_state.set_pos_ghost(2, new_pos_ghosts["ghosts2"])

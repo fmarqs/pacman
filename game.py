@@ -13,7 +13,6 @@ class game:
         self.create_board_game()
         self.ghosts_are_vulnerable = False
         self.power_mode_timer = 0
-        self.power_mode = False
 
     def create_board_game(self):
         # Novo layout do labirinto fornecido
@@ -52,24 +51,9 @@ class game:
         # Contar o número de comidas no layout fornecido
         self.food_count = 271
 
-    def display(self) -> None:
-        for x in range(self.size_board[0]):
-            for y in range(self.size_board[1]):
-                if (x, y) == self.pacman_position:
-                    print("P", end=" ")
-                elif (x, y) == self.ghost1_position:
-                    print("G1", end=" ")
-                elif (x, y) == self.ghost2_position:
-                    print("G2", end=" ")
-                else:
-                    print(self.board[x][y], end=" ")
-            print()
-        print(f"                                                Score: {self.score}")
-
     def get_size(self) -> Tuple[int, int]:
         # Retornar as dimensões do tabuleiro (número de linhas e colunas)
         return self.size_board
-
 
     def get_board(self):
         return self.board
@@ -104,12 +88,11 @@ class game:
         self.score = new_score
 
     def activate_power_mode(self):
-        self.power_mode = True
         self.power_mode_timer = 40
         self.ghosts_are_vulnerable = True  # Fantasmas ficam vulneráveis
 
 
-    def move_pacman(self, direction):
+    def move_pacman_validation(self, direction):
         # Posição atual do Pacman
         x, y = self.pacman_position
         new_x, new_y = x, y
@@ -152,7 +135,7 @@ class game:
                 self.activate_power_mode()
                 self.board[new_x][new_y] = ' '  # Remover comida especial
 
-    def move_ghosts(self):
+    def move_ghosts_validation(self):
         for ghost_num in [1, 2]:
             ghost_pos = self.get_pos_ghost(ghost_num)
             x, y = ghost_pos
@@ -176,11 +159,8 @@ class game:
                     self.board[x][y] = ' '  # Limpa a posição anterior do fantasma
 
                 # Mover o fantasma para a nova posição, preservando a comida se houver
-                if self.board[new_pos[0]][new_pos[1]] == '*':  # Manter a comida ao passar
-                    self.set_pos_ghost(2, new_pos)
-                else:
-                    self.set_pos_ghost(ghost_num, new_pos)
-                    self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
+                self.set_pos_ghost(ghost_num, new_pos)
+                self.board[new_pos[0]][new_pos[1]] = f'G{ghost_num}'
 
     def get_pacman_moves(self) -> List[str]:
         """
@@ -246,47 +226,8 @@ class game:
             0 <= y < self.size_board[1] and
             self.board[x][y] not in ['-', 'P', 'G', 'G2']  # Não pode ser parede, pacman ou outro fantasma
         )
-    
-    def move_back(self, move):
-        """
-        Reverte o último movimento do Pac-Man com base na direção passada.
-        :param move: Direção que Pac-Man se moveu ('up', 'down', 'left', 'right').
-        """
-        if move == "up":
-            self.move_pacman('down')
-        elif move == "down":
-            self.move_pacman('up')
-        elif move == "left":
-            self.move_pacman('right')
-        elif move == "right":
-            self.move_pacman('left')
 
-    def move_back_ghost(self, move):
-        """
-        Reverte o último movimento dos fantasmas com base na direção passada.
-        :param move: Direção que o fantasma se moveu ('up', 'down', 'left', 'right').
-        """
-        for ghost_num in [1, 2]:
-            ghost_pos = self.get_pos_ghost(ghost_num)
-            x, y = ghost_pos
-
-            # Inicializa new_x e new_y com a posição atual do fantasma
-            new_x, new_y = x, y
-
-            # Determina o movimento reverso baseado na direção
-            if move == "up":
-                new_x, new_y = x + 1, y  # Inverte o movimento para baixo
-            elif move == "down":
-                new_x, new_y = x - 1, y  # Inverte o movimento para cima
-            elif move == "left":
-                new_x, new_y = x, y + 1  # Inverte o movimento para a direita
-            elif move == "right":
-                new_x, new_y = x, y - 1  # Inverte o movimento para a esquerda
-
-            # Atualiza a posição do fantasma
-            self.set_pos_ghost(ghost_num, (new_x, new_y))
-
-    def is_terminal(self) -> bool:
+    def game_finished(self) -> bool:
         """
         Verifica se o estado atual do jogo é terminal.
         O jogo termina se Pac-Man for capturado por um fantasma ou se todas as comidas forem comidas.
@@ -302,14 +243,6 @@ class game:
 
         # Caso contrário, o jogo não terminou
         return False
-
-    def start_game(self):
-        # Simular movimentos para testes
-        self.display()
-        for _ in range(5):  # Movimentar 5 vezes para testar
-            self.move_pacman('left')
-            self.move_ghosts()
-            self.display()  # Atualizar e exibir o tabuleiro a cada movimento
 
     def create_copy_state(self) -> 'game':
         """
@@ -345,22 +278,11 @@ class game:
 
         if is_pacman:
             # Aplica movimento para o Pac-Man
-            new_state.move_pacman(move)
+            new_state.move_pacman_validation(move)
         else:
             # Aplica movimento para os fantasmas (considerando que o movimento é aleatório ou predefinido)
-            new_state.move_ghosts()  # Esse método deve mover todos os fantasmas
+            new_state.move_ghosts_validation()  # Esse método deve mover todos os fantasmas
 
         return new_state
 
 
-
-
-# Inicializar o jogo e iniciar a simulação
-game_instance = game()
-game_instance.start_game()
-game_instance = game(
-    size_board=(10, 18),  # Tamanho do novo labirinto
-    pacman_position=(1, 1),  # Ajuste a posição inicial para evitar colisões
-    ghost1_position=(1, 16),  # Ajuste a posição inicial do fantasma 1
-    ghost2_position=(3, 15)   # Ajuste a posição inicial do fantasma 2
-)
